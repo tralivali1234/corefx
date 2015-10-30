@@ -362,7 +362,6 @@ internal static partial class Interop
             }
         }
 
-        //TODO (Issue #3362) should we check Bio should retry?
         private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)
         {
             Debug.Assert(buffer != null);
@@ -377,7 +376,6 @@ internal static partial class Interop
             return bytes;
         }
 
-        //TODO (Issue #3362) should we check Bio should retry?
         private static int BioWrite(SafeBioHandle bio, byte[] buffer, int offset, int count)
         {
             Debug.Assert(buffer != null);

@@ -279,6 +279,6 @@ namespace System.Net.Security
 
     internal abstract class SafeFreeContextBufferChannelBinding : ChannelBinding
     {
-        // TODO (Issue #3362) To be implemented
+        // TODO (Issue #3954) To be implemented
     }
 }

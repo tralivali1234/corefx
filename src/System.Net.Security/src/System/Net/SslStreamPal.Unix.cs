@@ -66,7 +66,7 @@ namespace System.Net
 
         public static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute)
         {
-            // TODO (Issue #3362) To be implemented
+            // TODO (Issue #3954) To be implemented
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 

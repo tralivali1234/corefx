@@ -246,7 +246,8 @@ namespace System.Net
 
         private static int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
         {
-            // TODO (Issue #3362) To be implemented
+            // Code to get the Issuer List is in GetRequestCertificateAuthorities()
+            // Being a PAL function , this needs to be present but not used anywhere.
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
     }
