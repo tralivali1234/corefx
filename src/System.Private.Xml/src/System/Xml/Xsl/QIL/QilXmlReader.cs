@@ -368,7 +368,6 @@ namespace System.Xml.Xsl.Qil
                         MethodInfo mi = null;
                         QilName name = (QilName)list[0];
 
-#pragma warning disable 0436  //TODO: remove this when AppDomain.GetAssemblies() becomes available
                         foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                         {
                             Type t = asm.GetType(ann.ClrNamespace);
@@ -378,7 +377,6 @@ namespace System.Xml.Xsl.Qil
                                 break;
                             }
                         }
-#pragma warning restore 0436
 
                         Debug.Assert(mi != null, "Cannot find method " + ann.ClrNamespace + "." + name.ToString());
 

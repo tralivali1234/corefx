@@ -4,6 +4,7 @@
 
 namespace System.Reflection.Emit
 {
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum FlowControl
     {
@@ -13,6 +14,7 @@ namespace System.Reflection.Emit
         Cond_Branch = 3,
         Meta = 4,
         Next = 5,
+        Phi = 6,
         Return = 7,
         Throw = 8,
     }

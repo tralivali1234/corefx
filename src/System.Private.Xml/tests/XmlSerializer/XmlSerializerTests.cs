@@ -19,7 +19,7 @@ using System.Xml.Serialization;
 using Xunit;
 
 public static partial class XmlSerializerTests
-{ 
+{
     [Fact]
     public static void Xml_BoolAsRoot()
     {
@@ -1514,7 +1514,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
 #if NET_NATIVE
-    [ActiveIssue(7991)]
 #endif
     [Fact]
     public static void Xml_ConstructorWithXmlRootAttr()
@@ -1532,7 +1531,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
 #if NET_NATIVE
-    [ActiveIssue(7991)]
 #endif
     [Fact]
     public static void Xml_ConstructorWithXmlAttributeOverrides()
@@ -1541,7 +1539,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         {
             Instruments = new Music.Instrument[]
             {
-                new Music.Brass() { Name = "Trumpet", IsValved = true }, 
+                new Music.Brass() { Name = "Trumpet", IsValved = true },
                 new Music.Brass() { Name = "Cornet", IsValved = true }
             }
         };
@@ -2031,7 +2029,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var actualStringArray = (string[])actual.StringArrayValue;
         Assert.NotNull(actualStringArray);
         Assert.True(Enumerable.SequenceEqual(stringArray, actualStringArray));
-        Assert.Equal(stringArray.Length, actualStringArray.Length);      
+        Assert.Equal(stringArray.Length, actualStringArray.Length);
     }
 
     [Fact]
@@ -2494,6 +2492,118 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     {
         MemoryStream stream = new MemoryStream();
         StreamWriter writer = new StreamWriter(stream);
+        writer.Write(s);
+        writer.Flush();
+        stream.Position = 0;
+        return stream;
+    }
+
+    [Fact]
+    public static void  SoapAttributeTests()
+    {
+        SoapAttributes soapAttrs = new SoapAttributes();
+        SoapAttributeOverrides soapOverrides = new SoapAttributeOverrides();
+        SoapElementAttribute soapElement1 = new SoapElementAttribute("Truck");
+        soapAttrs.SoapElement = soapElement1;
+        soapOverrides.Add(typeof(Transportation), "Vehicle", soapAttrs);
+    }
+
+    [ActiveIssue(12799)]
+    [Fact]
+    public static void XmlTypeMappingTest()
+    {
+        SoapAttributes soapAttrs = new SoapAttributes();
+        SoapAttributeOverrides soapOverrides = new SoapAttributeOverrides();
+        SoapElementAttribute soapElement1 = new SoapElementAttribute("Truck");
+        soapAttrs.SoapElement = soapElement1;
+        soapOverrides.Add(typeof(Transportation), "Vehicle", soapAttrs);
+        XmlTypeMapping myTypeMapping = (new SoapReflectionImporter(soapOverrides)).ImportTypeMapping(typeof(Transportation));
+        XmlSerializer ser = new XmlSerializer(myTypeMapping);
+        Transportation myTransportation = new Transportation();
+        myTransportation.Vehicle = "MyCar";
+        myTransportation.CreationDate = DateTime.Now;
+        myTransportation.thing = new Thing();
+        using (MemoryStream ms = new MemoryStream())
+        {
+            ser.Serialize(ms, myTransportation);
+        }
+    }
+
+    [Fact]
+    public static void XmlSerializationReaderWriterTest()
+    {
+        string s = "XmlSerializationReaderWriterTest";
+        byte[] original = System.Text.Encoding.Default.GetBytes(s);
+        byte[] converted = MyReader.HexToBytes(MyWriter.BytesToHex(original));
+        Assert.Equal(original, converted);
+    }
+
+    [Fact]
+    public static void XmlReflectionImporterTest()
+    {
+        string membername = "Action";
+        XmlReflectionImporter importer = new XmlReflectionImporter("http://www.contoso.com/");
+        XmlReflectionMember[] members = new XmlReflectionMember[1];
+        XmlReflectionMember member = members[0] = new XmlReflectionMember();
+        member.MemberType = typeof(AttributedURI);
+        member.MemberName = membername;
+        XmlMembersMapping mappings = importer.ImportMembersMapping("root", "", members, true);
+        Assert.Equal(1, mappings.Count);
+        XmlMemberMapping xmp = mappings[0];
+        Assert.Equal(membername, xmp.ElementName);
+        Assert.False(xmp.CheckSpecified);
+    }
+
+    [Fact]
+    public static void XmlSerializerImplementationTest()
+    {
+        Employee emp = new Employee() { EmployeeName = "Allice" };
+        SerializeIm sm = new SerializeIm();
+        Func<XmlSerializer> serializerfunc = () => sm.GetSerializer(typeof(Employee));
+        string expected = "<?xml version=\"1.0\"?>\r\n<Employee xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EmployeeName>Allice</EmployeeName>\r\n</Employee>";
+        SerializeAndDeserialize(emp, expected, serializerfunc);
+    }
+
+    [Fact]
+    public static void XmlSerializerVersionAttributeTest()
+    {
+        XmlSerializerVersionAttribute attr = new XmlSerializerVersionAttribute();
+        Assert.Null(attr.Type);
+        XmlSerializerVersionAttribute attr2 = new XmlSerializerVersionAttribute(typeof(Employee));
+        Assert.Equal(typeof(Employee), attr2.Type);
+    }
+
+    [Fact]
+    public static void XmlSerializerAssemblyAttributeTest()
+    {
+        object[] attrs = typeof(AssemblyAttrTestClass).GetCustomAttributes(typeof(XmlSerializerAssemblyAttribute), false);
+        XmlSerializerAssemblyAttribute attr = (XmlSerializerAssemblyAttribute)attrs[0];
+        Assert.NotNull(attr);
+        Assert.Equal("AssemblyAttrTestClass", attr.AssemblyName);
+    }
+
+    [Fact]
+    public static void CodeIdentifierTest()
+    {
+        CodeIdentifiers cds = new CodeIdentifiers(true);
+        cds.AddReserved(typeof(Employee).Name);
+        cds.Add("test", new TestData());
+        cds.AddUnique("test2", new TestData());
+    }
+
+    [Fact]
+    public static void IXmlTextParserTest()
+    {
+        string xmlFileContent = @"<root><date>2003-01-08T15:00:00-00:00</date></root>";
+        Stream sm = GenerateStreamFromString(xmlFileContent);
+        XmlTextReader reader = new XmlTextReader(sm);
+        MyXmlTextParser text = new MyXmlTextParser(reader);
+    }
+
+    private static Stream GenerateStreamFromString(string s)
+    {
+        var stream = new MemoryStream();
+        var writer = new StreamWriter(stream);
         writer.Write(s);
         writer.Flush();
         stream.Position = 0;

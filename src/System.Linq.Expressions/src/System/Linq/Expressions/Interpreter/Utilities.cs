@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-
-using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -88,85 +83,73 @@ namespace System.Linq.Expressions.Interpreter
     }
 #endif
 
-    internal class ScriptingRuntimeHelpers
+    internal static class ScriptingRuntimeHelpers
     {
         public static object Int32ToObject(int i)
         {
             switch (i)
             {
                 case -1:
-                    return Int32_m;
+                    return Utils.BoxedIntM1;
                 case 0:
-                    return Int32_0;
+                    return Utils.BoxedInt0;
                 case 1:
-                    return Int32_1;
+                    return Utils.BoxedInt1;
                 case 2:
-                    return Int32_2;
+                    return Utils.BoxedInt2;
+                case 3:
+                    return Utils.BoxedInt3;
             }
 
             return i;
         }
 
-        private static readonly object Int32_m = -1;
-        private static readonly object Int32_0 = 0;
-        private static readonly object Int32_1 = 1;
-        private static readonly object Int32_2 = 2;
-
-        public static object BooleanToObject(bool b)
-        {
-            return b ? True : False;
-        }
-
-        internal static readonly object True = true;
-        internal static readonly object False = false;
-
         internal static object GetPrimitiveDefaultValue(Type type)
         {
             object result;
 
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type))
+            switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
-                    result = ScriptingRuntimeHelpers.False;
+                    result = Utils.BoxedFalse;
                     break;
                 case TypeCode.SByte:
-                    result = default(SByte);
+                    result = default(sbyte);
                     break;
                 case TypeCode.Byte:
-                    result = default(Byte);
+                    result = default(byte);
                     break;
                 case TypeCode.Char:
-                    result = default(Char);
+                    result = default(char);
                     break;
                 case TypeCode.Int16:
-                    result = default(Int16);
+                    result = default(short);
                     break;
                 case TypeCode.Int32:
-                    result = ScriptingRuntimeHelpers.Int32_0;
+                    result = Utils.BoxedInt0;
                     break;
                 case TypeCode.Int64:
-                    result = default(Int64);
+                    result = default(long);
                     break;
                 case TypeCode.UInt16:
-                    result = default(UInt16);
+                    result = default(ushort);
                     break;
                 case TypeCode.UInt32:
-                    result = default(UInt32);
+                    result = default(uint);
                     break;
                 case TypeCode.UInt64:
-                    result = default(UInt64);
+                    result = default(ulong);
                     break;
-
                 case TypeCode.Single:
-                    return default(Single);
+                    return default(float);
                 case TypeCode.Double:
-                    return default(Double);
-                //            case TypeCode.DBNull: 
-                //                  return default(DBNull); 
+                    return default(double);
+                //case TypeCode.DBNull:
+                //    return default(DBNull);
                 case TypeCode.DateTime:
                     return default(DateTime);
                 case TypeCode.Decimal:
-                    return default(Decimal);
+                    return default(decimal);
                 default:
                     return null;
             }

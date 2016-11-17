@@ -45,6 +45,42 @@ namespace System.CodeDom.Tests
         }
 
         [Fact]
+        public void CodeMemberField_OpenGenericType_Works()
+        {
+            var cd = new CodeTypeDeclaration("SomeClass") { IsClass = true };
+            cd.Members.Add(new CodeMemberField(typeof(List<>), "_field"));
+
+            AssertEqual(cd,
+                @"public class SomeClass {
+                    private System.Collections.Generic.List<> _field;
+                }");
+        }
+
+        [Fact]
+        public void CodeMemberField_PointerType_Works()
+        {
+            var cd = new CodeTypeDeclaration("SomeClass") { IsClass = true };
+            cd.Members.Add(new CodeMemberField(typeof(int*), "_field"));
+
+            AssertEqual(cd,
+                @"public class SomeClass {
+                    private System.Int32* _field;
+                }");
+        }
+
+        [Fact]
+        public void CodeMemberField_ByRefType_Works()
+        {
+            var cd = new CodeTypeDeclaration("SomeClass") { IsClass = true };
+            cd.Members.Add(new CodeMemberField(typeof(int).MakeByRefType(), "_field"));
+
+            AssertEqual(cd,
+                @"public class SomeClass {
+                    private System.Int32& _field;
+                }");
+        }
+
+        [Fact]
         public void ClassWithStaticFields()
         {
             var cd = new CodeTypeDeclaration("SomeClass") { IsClass = true };
@@ -71,7 +107,7 @@ namespace System.CodeDom.Tests
 
             var field = new CodeMemberField("System.String", "Microsoft");
             field.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-            field.InitExpression = new CodePrimitiveExpression("hi" + Environment.NewLine);
+            field.InitExpression = new CodePrimitiveExpression("hi");
             cd.Members.Add(field);
 
             field = new CodeMemberField();
@@ -106,7 +142,7 @@ namespace System.CodeDom.Tests
 
             AssertEqual(cd,
                 @"public class ClassWithFields {
-                      public static string Microsoft = ""hi\r\n"";
+                      public static string Microsoft = ""hi"";
                       public static int StaticPublicField = 5;
                       public int NonStaticPublicField = 6;
                       private int PrivateField = 7;

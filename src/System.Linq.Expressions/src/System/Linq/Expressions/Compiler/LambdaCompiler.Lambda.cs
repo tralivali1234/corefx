@@ -88,7 +88,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Emits code which creates new instance of the delegateType delegate.
-        /// 
+        ///
         /// Since the delegate is getting closed over the "Closure" argument, this
         /// cannot be used with virtual/instance methods (inner must be static method)
         /// </summary>
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions.Compiler
         /// May end up creating a wrapper to match the requested delegate type.
         /// </summary>
         /// <param name="lambda">Lambda for which to generate a delegate</param>
-        /// 
+        ///
         private void EmitDelegateConstruction(LambdaExpression lambda)
         {
             // 1. Create the new compiler
@@ -158,8 +158,8 @@ namespace System.Linq.Expressions.Compiler
 
         private static Type[] GetParameterTypes(LambdaExpression lambda, Type firstType)
         {
-            var parameters = lambda.Parameters;
-            var count = parameters.Count;
+            Collections.ObjectModel.ReadOnlyCollection<ParameterExpression> parameters = lambda.Parameters;
+            int count = parameters.Count;
 
             Type[] result;
             int i;
@@ -178,7 +178,7 @@ namespace System.Linq.Expressions.Compiler
 
             for (var j = 0; j < count; j++, i++)
             {
-                var p = parameters[j];
+                ParameterExpression p = parameters[j];
                 result[i] = p.IsByRef ? p.Type.MakeByRefType() : p.Type;
             }
 
@@ -206,7 +206,7 @@ namespace System.Linq.Expressions.Compiler
         /// <param name="parent">The parent scope.</param>
         /// <param name="inlined">true if the lambda is inlined; false otherwise.</param>
         /// <param name="flags">
-        /// The enum to specify if the lambda is compiled with the tail call optimization. 
+        /// The enum to specify if the lambda is compiled with the tail call optimization.
         /// </param>
         private void EmitLambdaBody(CompilerScope parent, bool inlined, CompilationFlags flags)
         {

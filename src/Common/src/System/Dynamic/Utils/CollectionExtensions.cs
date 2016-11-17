@@ -13,7 +13,7 @@ namespace System.Dynamic.Utils
     {
         /// <summary>
         /// Wraps the provided enumerable into a ReadOnlyCollection{T}
-        /// 
+        ///
         /// Copies all of the data into a new array, so the data can't be
         /// changed after creation. The exception is if the enumerable is
         /// already a ReadOnlyCollection{T}, in which case we just return it.
@@ -47,7 +47,7 @@ namespace System.Dynamic.Utils
         // We could probably improve the hashing here
         public static int ListHashCode<T>(this IEnumerable<T> list)
         {
-            var cmp = EqualityComparer<T>.Default;
+            EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             int h = 6551;
             foreach (T t in list)
             {
@@ -71,7 +71,7 @@ namespace System.Dynamic.Utils
                 return false;
             }
 
-            var cmp = EqualityComparer<T>.Default;
+            EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             for(int i = 0; i != count; ++i)
             {
                 if (!cmp.Equals(first[i], second[i]))

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Dynamic.Utils;
-
 namespace System.Linq.Expressions.Compiler
 {
     internal partial class StackSpiller
@@ -13,7 +11,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Rewrite the expression
         /// </summary>
-        /// 
+        ///
         /// <param name="node">Expression to rewrite</param>
         /// <param name="stack">State of the stack before the expression is emitted.</param>
         /// <returns>Rewritten expression.</returns>

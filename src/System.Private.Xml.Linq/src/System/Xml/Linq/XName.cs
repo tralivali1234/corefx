@@ -10,7 +10,7 @@ namespace System.Xml.Linq
     /// <summary>
     /// Represents a name of an XML element or attribute. This class cannot be inherited.
     /// </summary>
-    [SuppressMessage("Microsoft.Usage", "CA2229:ImplementSerializationConstructors", Justification = "Deserialization handled by NameSerializer.")]
+    [Serializable]
     public sealed class XName : IEquatable<XName>, ISerializable
     {
         private XNamespace _ns;
@@ -190,19 +190,19 @@ namespace System.Xml.Linq
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data</param>
         /// <param name="context">The destination for this serialization</param>
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
-            if (info == null) throw new ArgumentNullException("info");
+            if (info == null) throw new ArgumentNullException(nameof(info));
             info.AddValue("name", ToString());
             info.SetType(typeof(NameSerializer));
         }
     }
 
-    [Serializable()]
+    [Serializable]
     internal sealed class NameSerializer : IObjectReference, ISerializable
     {
         string _expandedName;
 
         private NameSerializer(SerializationInfo info, StreamingContext context) {
-            if (info == null) throw new ArgumentNullException("info");
+            if (info == null) throw new ArgumentNullException(nameof(info));
             _expandedName = info.GetString("name");
         }
 

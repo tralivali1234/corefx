@@ -14,13 +14,13 @@ namespace System.Dynamic.Utils
         internal static ParameterInfo[] GetParametersCached(this MethodBase method)
         {
             ParameterInfo[] pis;
-            var pic = s_paramInfoCache;
+            CacheDict<MethodBase, ParameterInfo[]> pic = s_paramInfoCache;
             if (!pic.TryGetValue(method, out pis))
             {
                 pis = method.GetParameters();
 
                 Type t = method.DeclaringType;
-                if (t != null && TypeUtils.CanCache(t))
+                if (t != null && t.CanCache())
                 {
                     pic[method] = pis;
                 }
@@ -45,6 +45,6 @@ namespace System.Dynamic.Utils
 
             return (pi.Attributes & (ParameterAttributes.Out)) == ParameterAttributes.Out;
         }
-#endif 
+#endif
     }
 }

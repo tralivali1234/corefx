@@ -17,7 +17,7 @@ namespace System.Net.Http
         private HttpContentHeaders _headers;
         private MemoryStream _bufferedContent;
         private bool _disposed;
-        private Stream _contentReadStream;
+        private Task<Stream> _contentReadStream;
         private bool _canCalculateLength;
 
         internal const long MaxBufferSize = Int32.MaxValue;
@@ -124,7 +124,7 @@ namespace System.Net.Http
             {
                 if (_headers == null)
                 {
-                    _headers = new HttpContentHeaders(GetComputedOrBufferLength);
+                    _headers = new HttpContentHeaders(this);
                 }
                 return _headers;
             }
@@ -151,12 +151,12 @@ namespace System.Net.Http
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public Task<string> ReadAsStringAsync()
@@ -244,17 +244,15 @@ namespace System.Net.Http
             ArraySegment<byte> buffer;
             if (_contentReadStream == null && TryGetBuffer(out buffer))
             {
-                _contentReadStream = new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false);
+                _contentReadStream = Task.FromResult<Stream>(new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false));
             }
 
-            return _contentReadStream != null ?
-                Task.FromResult(_contentReadStream) :
-                ReadAsStreamAsyncCore(CreateContentReadStreamAsync());
-        }
+            if (_contentReadStream != null)
+            {
+                return _contentReadStream;
+            }
 
-        private async Task<Stream> ReadAsStreamAsyncCore(Task<Stream> createContentStreamTask)
-        {
-            _contentReadStream = await createContentStreamTask.ConfigureAwait(false);
+            _contentReadStream = CreateContentReadStreamAsync();
             return _contentReadStream;
         }
 
@@ -375,7 +373,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(LoadIntoBufferAsync), e);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                 throw;
             }
         }
@@ -393,7 +391,7 @@ namespace System.Net.Http
         // that case (send chunked, buffer first, etc.).
         protected internal abstract bool TryComputeLength(out long length);
 
-        private long? GetComputedOrBufferLength()
+        internal long? GetComputedOrBufferLength()
         {
             CheckDisposed();
 
@@ -456,9 +454,11 @@ namespace System.Net.Http
             {
                 _disposed = true;
 
-                if (_contentReadStream != null)
+                if (_contentReadStream != null &&
+                    _contentReadStream.Status == TaskStatus.RanToCompletion)
                 {
-                    _contentReadStream.Dispose();
+                    _contentReadStream.Result.Dispose();
+                    _contentReadStream = null;
                 }
 
                 if (IsBuffered)
@@ -490,8 +490,9 @@ namespace System.Net.Http
         {
             if (task == null)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_content_no_task_returned_copytoasync, this.GetType().ToString()));
-                throw new InvalidOperationException(SR.net_http_content_no_task_returned);
+                var e = new InvalidOperationException(SR.net_http_content_no_task_returned);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                throw e;
             }
         }
 
@@ -657,6 +658,24 @@ namespace System.Net.Http
             {
                 CheckSize(count);
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                ArraySegment<byte> buffer;
+                if (TryGetBuffer(out buffer))
+                {
+                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
+                    long pos = Position;
+                    long length = Length;
+                    Position = length;
+
+                    long bytesToWrite = length - pos;
+                    return destination.WriteAsync(buffer.Array, (int)(buffer.Offset + pos), (int)bytesToWrite, cancellationToken);
+                }
+
+                return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
 
             private void CheckSize(int countToAdd)
