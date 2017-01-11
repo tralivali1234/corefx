@@ -14,9 +14,40 @@ usage()
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "staticLibLink - Optional argument to statically link any native library."
+    echo "portableLinux - Optional argument to build native libraries portable over GLIBC based Linux distros."
     echo "generateversion - Pass this in to get a version on the build output."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     exit 1
+}
+
+initHostDistroRid()
+{
+    if [ "$__HostOS" == "Linux" ]; then
+        if [ ! -e /etc/os-release ]; then
+            echo "WARNING: Can not determine runtime id for current distro."
+            __HostDistroRid=""
+        else
+            source /etc/os-release
+            __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
+        fi
+    fi
+}
+
+initTargetDistroRid()
+{
+    if [ $__CrossBuild == 1 ]; then
+        if [ "$__BuildOS" == "Linux" ]; then
+            if [ ! -e $ROOTFS_DIR/etc/os-release ]; then
+                echo "WARNING: Can not determine runtime id for current distro."
+                export __DistroRid=""
+            else
+                source $ROOTFS_DIR/etc/os-release
+                export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
+            fi
+        fi
+    else
+        export __DistroRid="$__HostDistroRid"
+    fi
 }
 
 setup_dirs()
@@ -112,6 +143,18 @@ __ServerGC=0
 __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
+__StaticLibLink=0
+__PortableLinux=0
+
+CPUName=$(uname -p)
+# Some Linux platforms report unknown for platform, but the arch for machine.
+if [ $CPUName == "unknown" ]; then
+    CPUName=$(uname -m)
+fi
+
+if [ $CPUName == "i686" ]; then
+    __BuildArch=x86
+fi
 
 while :; do
     if [ $# -le 0 ]; then
@@ -133,8 +176,8 @@ while :; do
         arm)
             __BuildArch=arm
             ;;
-        arm-softfp)
-            __BuildArch=arm-softfp
+        armel)
+            __BuildArch=armel
             ;;
         arm64)
             __BuildArch=arm64
@@ -166,7 +209,10 @@ while :; do
             __VerboseBuild=1
             ;;
         staticliblink)
-            __CMakeExtraArgs="$__CMakeExtraArgs -DCMAKE_STATIC_LIB_LINK=1"
+            __StaticLibLink=1
+            ;;
+        portablelinux)
+            __PortableLinux=1
             ;;
         generateversion)
             __generateversionsource=true
@@ -222,12 +268,10 @@ while :; do
     shift
 done
 
+__CMakeExtraArgs="$__CMakeExtraArgs -DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableLinux"
+__CMakeExtraArgs="$__CMakeExtraArgs -DCMAKE_STATIC_LIB_LINK=$__StaticLibLink"
+
 # Set cross build
-CPUName=$(uname -p)
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [ $CPUName == "unknown" ]; then
-    CPUName=$(uname -m)
-fi
 case $CPUName in
     i686)
         if [ $__BuildArch != x86 ]; then
@@ -257,6 +301,12 @@ if [ "$__CrossBuild" == 1 ]; then
         export ROOTFS_DIR="$__rootRepo/cross/rootfs/$__BuildArch"
     fi
 fi
+
+# init the host distro name
+initHostDistroRid
+
+# init the target distro name
+initTargetDistroRid
 
     # Check prereqs.
 

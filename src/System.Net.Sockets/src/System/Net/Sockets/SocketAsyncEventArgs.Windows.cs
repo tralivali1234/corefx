@@ -251,7 +251,7 @@ namespace System.Net.Sockets
                     (int)(DisconnectReuseSocket ? TransmitFileOptions.ReuseSocket : 0),
                     0))
             {
-                socketError = (SocketError)Marshal.GetLastWin32Error();
+                socketError = SocketPal.GetLastSocketError();
             }
 
             return socketError;
@@ -637,7 +637,8 @@ namespace System.Net.Sockets
                 _ptrSendPacketsDescriptor,
                 _sendPacketsDescriptor.Length,
                 _sendPacketsSendSize,
-                _ptrNativeOverlapped);
+                _ptrNativeOverlapped,
+                _sendPacketsFlags);
 
             return result ? SocketError.Success : SocketPal.GetLastSocketError();
         }
@@ -881,7 +882,7 @@ namespace System.Net.Sockets
         }
 
         // Sets up an Overlapped object with either _buffer or _acceptBuffer pinned.
-        unsafe private void SetupOverlappedSingle(bool pinSingleBuffer)
+        private unsafe void SetupOverlappedSingle(bool pinSingleBuffer)
         {
             // Pin buffer, get native pointers, and fill in WSABuffer descriptor.
             if (pinSingleBuffer)
@@ -928,7 +929,7 @@ namespace System.Net.Sockets
         }
 
         // Sets up an Overlapped object with multiple buffers pinned.
-        unsafe private void SetupOverlappedMultiple()
+        private unsafe void SetupOverlappedMultiple()
         {
             ArraySegment<byte>[] tempList = new ArraySegment<byte>[_bufferList.Count];
             _bufferList.CopyTo(tempList, 0);
@@ -966,7 +967,7 @@ namespace System.Net.Sockets
         }
 
         // Sets up an Overlapped object for SendPacketsAsync.
-        unsafe private void SetupOverlappedSendPackets()
+        private unsafe void SetupOverlappedSendPackets()
         {
             int index;
 
@@ -1160,28 +1161,17 @@ namespace System.Net.Sockets
 
         private unsafe void FinishOperationReceiveMessageFrom()
         {
-            IPAddress address = null;
             Interop.Winsock.WSAMsg* PtrMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBuffer, 0);
 
             if (_controlBuffer.Length == s_controlDataSize)
             {
                 // IPv4.
-                Interop.Winsock.ControlData controlData = Marshal.PtrToStructure<Interop.Winsock.ControlData>(PtrMessage->controlBuffer.Pointer);
-                if (controlData.length != UIntPtr.Zero)
-                {
-                    address = new IPAddress((long)controlData.address);
-                }
-                _receiveMessageFromPacketInfo = new IPPacketInformation(((address != null) ? address : IPAddress.None), (int)controlData.index);
+                _receiveMessageFromPacketInfo = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlData*)PtrMessage->controlBuffer.Pointer);
             }
             else if (_controlBuffer.Length == s_controlDataIPv6Size)
             {
                 // IPv6.
-                Interop.Winsock.ControlDataIPv6 controlData = Marshal.PtrToStructure<Interop.Winsock.ControlDataIPv6>(PtrMessage->controlBuffer.Pointer);
-                if (controlData.length != UIntPtr.Zero)
-                {
-                    address = new IPAddress(controlData.address);
-                }
-                _receiveMessageFromPacketInfo = new IPPacketInformation(((address != null) ? address : IPAddress.IPv6None), (int)controlData.index);
+                _receiveMessageFromPacketInfo = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlDataIPv6*)PtrMessage->controlBuffer.Pointer);
             }
             else
             {
@@ -1243,7 +1233,7 @@ namespace System.Net.Sockets
                             try
                             {
                                 // The Async IO completed with a failure.
-                                // here we need to call WSAGetOverlappedResult() just so Marshal.GetLastWin32Error() will return the correct error.
+                                // here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
                                 bool success = Interop.Winsock.WSAGetOverlappedResult(
                                     _currentSocket.SafeHandle,
                                     _ptrNativeOverlapped,

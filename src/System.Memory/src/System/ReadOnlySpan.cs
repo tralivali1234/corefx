@@ -358,7 +358,7 @@ namespace System
         /// <summary>
         /// Returns a 0-length read-only span whose base is the null pointer.
         /// </summary>
-        public static readonly ReadOnlySpan<T> Empty = default(ReadOnlySpan<T>);
+        public static ReadOnlySpan<T> Empty => default(ReadOnlySpan<T>);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
@@ -372,6 +372,10 @@ namespace System
             else
                 return ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset);
         }
+
+        // These expose the internal representation for Span-related apis use only.
+        internal Pinnable<T> Pinnable => _pinnable;
+        internal IntPtr ByteOffset => _byteOffset;
 
         //
         // If the Span was constructed from an object,

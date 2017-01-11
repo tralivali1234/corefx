@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -19,12 +17,34 @@ namespace System.Linq.Expressions.Tests
         {
             var e = (Expression)Expression.Constant(0);
 
-            var n = 10000;
+            int n = 10000;
 
             for (var i = 0; i < n; i++)
                 e = Expression.Add(e, Expression.Constant(1));
 
-            var f = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
+            Func<int> f = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
+
+            Assert.Equal(n, f());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CompileDeepTree_NoStackOverflowFast(bool useInterpreter)
+        {
+            Expression e = Expression.Constant(0);
+
+            int n = 100;
+
+            for (int i = 0; i < n; i++)
+                e = Expression.Add(e, Expression.Constant(1));
+
+            Func<int> f = null;
+            // Request a stack size of 1 to get the minimum size allowed.
+            // This reduces the size of tree needed to risk a stack overflow.
+            // This though will only risk overflow once, so the outerloop test
+            // above is still needed.
+            Thread t = new Thread(() => f = Expression.Lambda<Func<int>>(e).Compile(useInterpreter), 1);
+            t.Start();
+            t.Join();
 
             Assert.Equal(n, f());
         }
@@ -372,17 +392,17 @@ namespace System.Linq.Expressions.Tests
 
         public static void VerifyIL(this LambdaExpression expression, string expected, bool appendInnerLambdas = false)
         {
-            var actual = expression.GetIL(appendInnerLambdas);
+            string actual = expression.GetIL(appendInnerLambdas);
 
-            var nExpected = Normalize(expected);
-            var nActual = Normalize(actual);
+            string nExpected = Normalize(expected);
+            string nActual = Normalize(actual);
 
             Assert.Equal(nExpected, nActual);
         }
 
         private static string Normalize(string s)
         {
-            var lines =
+            Collections.Generic.IEnumerable<string> lines =
                 s
                 .Replace("\r\n", "\n")
                 .Split(new[] { '\n' })
@@ -404,19 +424,19 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyEmitConstantsToIL(Expression e, int expectedCount, object expectedValue)
         {
-            var f = Expression.Lambda(e).Compile();
+            Delegate f = Expression.Lambda(e).Compile();
 
             var c = f.Target as Closure;
             Assert.NotNull(c);
             Assert.Equal(expectedCount, c.Constants.Length);
 
-            var o = f.DynamicInvoke();
+            object o = f.DynamicInvoke();
             Assert.Equal(expectedValue, o);
         }
 
         private static void Verify_VariableBinder_CatchBlock_Filter(CatchBlock @catch)
         {
-            var e =
+            Expression<Action> e =
                 Expression.Lambda<Action>(
                     Expression.TryCatch(
                         Expression.Empty(),

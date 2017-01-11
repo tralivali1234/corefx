@@ -400,6 +400,14 @@
     ]
   },
   {
+    "Name": "System.Configuration",
+    "Description": "Provides types that support using configuration files.",
+    "CommonTypes": [
+      "System.Configuration.Configuration",
+      "System.Configuration.ConfigurationManager"
+    ]
+  },
+  {
     "Name": "System.Console",
     "Description": "Provides the System.Console class, which represents the standard input, output and error streams for console applications.",
     "CommonTypes": [
@@ -1819,7 +1827,7 @@
   },
   {
     "Name": "System.ValueTuple",
-    "Description": "Provides the System.ValueTuple structs, which implement the underlying types for C# 7 tuples.",
+    "Description": "Provides the System.ValueTuple structs, which implement the underlying types for tuples in C# and Visual Basic.",
     "CommonTypes": [
       "System.ValueTuple",
       "System.ValueTuple<T1>",
