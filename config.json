@@ -24,11 +24,23 @@
       "values": ["x64", "x86", "arm", "arm64"],
       "defaultValue": "x64"
     },
+    "BuildAllConfigurations": {
+      "description": "Builds projects for all BuildConfigurations rather than determining best configuration for TargetGroup/OSGroup.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": false
+    },
     "RuntimeOS": {
       "description": "The RuntimeOS used for building and restoring native OS dependent assets (i.e. RID specific binaries)",
       "valueType": "property",
       "values": ["win7", "osx.10.10", "ubuntu.14.04", "ubuntu.16.04", "etc-other-rid-based-os-names"],
       "defaultValue": ""
+    },
+    "PortableBuild": {
+      "description": "Indicates if this is a portable build.",
+      "valueType": "property",
+      "values": [ "True", "False"],
+      "defaultValue": "false"
     },
     "SkipTests": {
       "description": "Enables/Disables running tests.",
@@ -42,17 +54,11 @@
       "values": ["True", "False"],
       "defaultValue": true
     },
-    "RestoreDuringBuild": {
-      "description": "Enables/Disables the restoration of packages.",
-      "valueType": "property",
-      "values": ["True", "False"],
-      "defaultValue": true
-    },
     "BuildPackages": {
       "description": "Enables/Disables building packages.",
       "valueType": "property",
       "values": ["True", "False"],
-      "defaultValue": true
+      "defaultValue": false
     },
     "BuildPackageLibraryReferences": {
       "description": "Enables/Disables building libraries referenced by packages.",
@@ -174,6 +180,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "StripSymbolsAdditionalArg": {
+      "description": "Pass additional argument to native build to configure symbol stripping.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
     "Project": {
       "description": "Project where the commands are going to be applied.",
       "valueType": "passThrough",
@@ -191,12 +203,6 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    },
-    "RestoreForTestsAgainstPackagesOnly": {
-      "description": "MsBuild target that restores the packages.",
-      "valueType": "property",
-      "values": ["true", "false"],
-      "defaultValue": "true"
     },
     "GenerateVersionHeader": {
       "description": "MsBuild target that generates the version header.",
@@ -236,19 +242,29 @@
           "description": "Builds the NuGet packages.",
           "settings": {
             "Project": "src/packages.builds",
+            "BuildPackages": "true",
             "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log"
           }
         },
-        "portableLinux":{
-          "description": "Make the build-native script generate binaries that are portable over glibc based Linux distros.",
+        "portable":{
+          "description": "Make the build-native script generate binaries that are portable for the platform.",
           "settings": {
-            "RuntimeOS":"linux"
+            "PortableBuild":"true"
           }
         },
+        "stripSymbols": {
+          "description": "No-op. Added so that stripSymbols can be passed to build.sh without breaking build-managed.sh.",
+          "settings": { }
+        },
         "tests": {
-          "description": "Builds the tests that are in the repository, doesn't restore packages.",
+          "description": "Builds src and then builds and runs the tests for the given configuration.",
           "settings": {
-            "RestoreDuringBuild": "false",
+            "BuildTests": true
+          }
+        },
+        "testsOnly": {
+          "description": "Builds and runs the tests for the given configuration.",
+          "settings": {
             "Project": "src/tests.builds",
             "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
           }
@@ -263,6 +279,12 @@
           "description": "Sets optimization level to release for managed build configuration. (/p:ConfigurationGroup=Release)",
           "settings": {
             "ConfigurationGroup": "Release"
+          }
+        },
+        "allConfigurations": {
+          "description": "Builds all configurations instead of only those specified by framework/os.",
+          "settings": {
+            "BuildAllConfigurations":"true"
           }
         },
         "framework": {
@@ -312,6 +334,7 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
+          "BuildPackages": "default",
           "ConfigurationGroup": "default",
           "MsBuildLogging":"default",
           "MsBuildWarning":"default",
@@ -331,6 +354,12 @@
           "description": "Sets optimization level to release for native build configuration.",
           "settings": {
             "CmakeBuildType": "Release"
+          }
+        },
+        "allConfigurations": {
+          "description": "Builds all configurations instead of only those specified by framework/os.",
+          "settings": {
+            "BuildAllConfigurations":"true"
           }
         },
         "framework": {
@@ -357,12 +386,22 @@
             "RuntimeOs": "default"
           }
         },
-        "portableLinux":{
+        "portable":{
           "description": "Make the build-native script generate binaries that are portable over glibc based Linux distros.",
           "settings": {
-            "AdditionalArgs": "portableLinux"
+            "AdditionalArgs": "-portable"
           }
-        }
+        },
+        "stripSymbols": {
+          "description": "Strip native symbols.",
+          "settings": {
+            "StripSymbolsAdditionalArg": "stripSymbols"
+          }
+        },
+        "tests": {
+          "description": "No-op for build-native, included just to enable easy combination with build-managed",
+          "settings": { }
+        },
       },
       "defaultValues": {
         "toolName": "terminal",
@@ -455,7 +494,6 @@
         "p": {
           "description": "Restores all NuGet packages for repository.",
           "settings": {
-            "RestoreDuringBuild":  true,
             "Sync": "default"
           }
         },
@@ -468,7 +506,6 @@
         "t": {
           "description": "Deprecated, use sync /p instead.",
           "settings": {
-            "RestoreDuringBuild":  true,
             "Sync": "default"
           }
         },
@@ -502,10 +539,10 @@
             "BuildNumberMinor": "default"
           }
         },
-        "portableLinux":{
-          "description": "Download packages that are portable over glibc based Linux distros.",
+        "portable":{
+          "description": "Download packages that are portable for the platform.",
           "settings": {
-            "RuntimeOS":"linux"
+            "PortableBuild":"true"
           }
         },
         "verbose": {
@@ -528,7 +565,7 @@
     "msbuild": {
       "osSpecific": {
         "windows": {
-          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false /l:BinClashLogger,Tools\\net45\\Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
+          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false /l:BinClashLogger,Tools\\net46\\Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
           "path": "Tools/msbuild.cmd"
         },
         "unix": {

@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(!type.IsEnum);
             switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new IncrementInt16());
@@ -168,7 +168,7 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.Single: return s_Single ?? (s_Single = new IncrementSingle());
                 case TypeCode.Double: return s_Double ?? (s_Double = new IncrementDouble());
                 default:
-                    throw Error.ExpressionNotSupportedForType("Increment", type);
+                    throw ContractUtils.Unreachable;
             }
         }
     }

@@ -154,7 +154,7 @@ namespace System.Linq.Expressions.Interpreter
                     return null;
             }
 
-            if (type.GetTypeInfo().IsEnum)
+            if (type.IsEnum)
             {
                 result = Enum.ToObject(type, result);
             }
@@ -171,7 +171,7 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public static void UnwrapAndRethrow(TargetInvocationException exception)
         {
-            ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+            ExceptionDispatchInfo.Throw(exception.InnerException);
         }
     }
 

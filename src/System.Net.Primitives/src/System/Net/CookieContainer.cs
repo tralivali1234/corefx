@@ -7,6 +7,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Text;
+#if uap
+using System.Net.Internal;
+#endif
 
 // Relevant cookie specs:
 //
@@ -727,6 +730,11 @@ namespace System.Net
 
         internal CookieCollection InternalGetCookies(Uri uri)
         {
+            if (_count == 0)
+            {
+                return null;
+            }
+
             bool isSecure = (uri.Scheme == UriScheme.Https);
             int port = uri.Port;
             CookieCollection cookies = null;

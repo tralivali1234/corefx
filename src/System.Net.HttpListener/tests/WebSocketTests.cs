@@ -14,13 +14,11 @@ namespace System.Net.Tests
     {
         private HttpListenerFactory _factory;
         private HttpListener _listener;
-        private string _url;
 
         public WebSocketTests()
         {
             _factory = new HttpListenerFactory();
             _listener = _factory.GetListener();
-            _url = _factory.ListeningUrl;
         }
 
         public void Dispose() => _factory.Dispose();
@@ -28,7 +26,14 @@ namespace System.Net.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task AcceptWebSocketAsync_NullSubProtocol_Succeeds()
         {
-            UriBuilder uriBuilder = new UriBuilder(_url);
+            if (PlatformDetection.IsWindows7)
+            {
+                // Websockets in WinHttp 5.1 is only supported from Windows 8+
+                Assert.Throws<PlatformNotSupportedException>(() => new ClientWebSocket());
+                return;
+            }
+
+            UriBuilder uriBuilder = new UriBuilder(_factory.ListeningUrl);
             uriBuilder.Scheme = "ws";
 
             Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();

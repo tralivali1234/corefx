@@ -109,6 +109,7 @@ namespace System.Reflection.Emit
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
         protected override bool IsPointerImpl() { throw null; }
         protected override bool IsPrimitiveImpl() { throw null; }
+        public override bool IsSZArray { get { throw null; } }
         protected override bool IsValueTypeImpl() { throw null; }
         public override System.Type MakeArrayType() { throw null; }
         public override System.Type MakeArrayType(int rank) { throw null; }
@@ -206,6 +207,7 @@ namespace System.Reflection.Emit
         protected override bool IsPointerImpl() { throw null; }
         protected override bool IsPrimitiveImpl() { throw null; }
         public override bool IsSubclassOf(System.Type c) { throw null; }
+        public override bool IsSZArray { get { throw null; } }
         protected override bool IsValueTypeImpl() { throw null; }
         public override System.Type MakeArrayType() { throw null; }
         public override System.Type MakeArrayType(int rank) { throw null; }
@@ -344,6 +346,7 @@ namespace System.Reflection.Emit
         public override System.RuntimeTypeHandle TypeHandle { get { throw null; } }
         public override System.Type UnderlyingSystemType { get { throw null; } }
         public void AddInterfaceImplementation(System.Type interfaceType) { }
+        public System.Type CreateType() { throw null; }
         public System.Reflection.TypeInfo CreateTypeInfo() { throw null; }
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[] parameterTypes) { throw null; }
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[] parameterTypes, System.Type[][] requiredCustomModifiers, System.Type[][] optionalCustomModifiers) { throw null; }
@@ -411,6 +414,7 @@ namespace System.Reflection.Emit
         protected override bool IsPointerImpl() { throw null; }
         protected override bool IsPrimitiveImpl() { throw null; }
         public override bool IsSubclassOf(System.Type c) { throw null; }
+        public override bool IsSZArray { get { throw null; } }
         public override System.Type MakeArrayType() { throw null; }
         public override System.Type MakeArrayType(int rank) { throw null; }
         public override System.Type MakeByRefType() { throw null; }

@@ -13,7 +13,7 @@
   <!-- Coverage options -->
   <PropertyGroup>
     <CodeCoverageEnabled>false</CodeCoverageEnabled>
-    <CodeCoverageEnabled Condition="'$(SkipTests)' != 'true' and '$(OS)' == 'Windows_NT' and '$(Coverage)' == 'true' and '$(Performance)' != 'true'">true</CodeCoverageEnabled>
+    <CodeCoverageEnabled Condition="'$(SkipTests)' != 'true' and '$(RunningOnUnix)' != 'true' and '$(Coverage)' == 'true' and '$(Performance)' != 'true'">true</CodeCoverageEnabled>
     <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$(TestWorkingDir)coverage\</CoverageReportDir>
 
     <!-- This targets file has two modes one for individual projects and one for all -->
@@ -41,6 +41,7 @@
          CodeCoverageAssemblies can be passed in to the build to gather coverage on additional assemblies. -->
     <ItemGroup>
       <_CodeCoverageAssemblies Include="$(AssemblyBeingTestedName)" /> 
+      <_CodeCoverageAssemblies Include="@(AdditionalCodeCoverageAssemblies)" />
       <_CodeCoverageAssemblies Include="$(CodeCoverageAssemblies)" Condition="'$(CodeCoverageAssemblies)' != ''" />
     </ItemGroup>
     <PropertyGroup>

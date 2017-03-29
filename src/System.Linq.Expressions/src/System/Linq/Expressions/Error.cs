@@ -210,13 +210,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// ArgumentException with message like "Type doesn't have constructor with a given signature"
-        /// </summary>
-        internal static Exception TypeDoesNotHaveConstructorForTheSignature()
-        {
-            return new ArgumentException(Strings.TypeDoesNotHaveConstructorForTheSignature);
-        }
-        /// <summary>
         /// ArgumentException with message like "Setter should have void type."
         /// </summary>
         internal static Exception SetterMustBeVoid(string paramName)
@@ -834,12 +827,13 @@ namespace System.Linq.Expressions
         {
             return NotAMemberOfType(p0, p1, GetParamName(paramName, index));
         }
+
         /// <summary>
-        /// PlatformNotSupportedException with message like "The instruction '{0}' is not supported for type '{1}'"
+        /// ArgumentException with message like "'{0}' is not a member of any type"
         /// </summary>
-        internal static Exception ExpressionNotSupportedForType(object p0, object p1)
+        internal static Exception NotAMemberOfAnyType(object p0, string paramName)
         {
-            return new PlatformNotSupportedException(Strings.ExpressionNotSupportedForType(p0, p1));
+            return new ArgumentException(Strings.NotAMemberOfAnyType(p0), paramName);
         }
 
         /// <summary>
@@ -973,9 +967,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Unhandled unary: {0}"
         /// </summary>
-        internal static Exception UnhandledUnary(object p0)
+        internal static Exception UnhandledUnary(object p0, string paramName)
         {
-            return new ArgumentException(Strings.UnhandledUnary(p0));
+            return new ArgumentException(Strings.UnhandledUnary(p0), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Unknown binding type"

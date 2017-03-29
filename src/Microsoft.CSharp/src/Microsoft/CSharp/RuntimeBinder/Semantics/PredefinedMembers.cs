@@ -196,7 +196,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     }
 
     // A description of a method the compiler uses while compiling.
-    internal class PredefinedMethodInfo
+    internal sealed class PredefinedMethodInfo
     {
         public PREDEFMETH method;
         public PredefinedType type;
@@ -220,7 +220,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 
     // A description of a method the compiler uses while compiling.
-    internal class PredefinedPropertyInfo
+    internal sealed class PredefinedPropertyInfo
     {
         public PREDEFPROP property;
         public PredefinedName name;
@@ -238,9 +238,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     // Loads and caches predefined members.
     // Also finds constructors on delegate types.
-    internal class PredefinedMembers
+    internal sealed class PredefinedMembers
     {
-        protected static void RETAILVERIFY(bool f)
+        private static void RETAILVERIFY(bool f)
         {
             if (!f)
                 Debug.Assert(false, "panic!");
@@ -352,10 +352,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            if (setter != null)
-            {
-                setter.SetMethKind(MethodKindEnum.PropAccessor);
-            }
+            setter?.SetMethKind(MethodKindEnum.PropAccessor);
 
             PropertySymbol property = null;
             if (getter != null)
@@ -463,7 +460,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         int index = signature[indexIntoSignatures];
                         indexIntoSignatures++;
-                        return classTyVars.Item(index);
+                        return classTyVars[index];
                     }
                 case (MethodSignatureEnum)PredefinedType.PT_VOID:
                     return GetTypeManager().GetVoid();
@@ -473,8 +470,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         AggregateSymbol agg = GetOptPredefAgg((PredefinedType)current);
                         if (agg != null)
                         {
-                            CType[] typeArgs = new CType[agg.GetTypeVars().size];
-                            for (int iTypeArg = 0; iTypeArg < agg.GetTypeVars().size; iTypeArg++)
+                            CType[] typeArgs = new CType[agg.GetTypeVars().Count];
+                            for (int iTypeArg = 0; iTypeArg < agg.GetTypeVars().Count; iTypeArg++)
                             {
                                 typeArgs[iTypeArg] = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
                                 if (typeArgs[iTypeArg] == null)
@@ -482,7 +479,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                     return null;
                                 }
                             }
-                            AggregateType type = GetTypeManager().GetAggregate(agg, getBSymmgr().AllocParams(agg.GetTypeVars().size, typeArgs));
+                            AggregateType type = GetTypeManager().GetAggregate(agg, getBSymmgr().AllocParams(agg.GetTypeVars().Count, typeArgs));
                             if (type.isPredefType(PredefinedType.PT_G_OPTIONAL))
                             {
                                 return GetTypeManager().GetNubFromNullable(type);
@@ -560,7 +557,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        public MethodSymbol GetOptionalMethod(PREDEFMETH method)
+        private MethodSymbol GetOptionalMethod(PREDEFMETH method)
         {
             return EnsureMethod(method);
         }
@@ -630,7 +627,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if ((methsym.GetAccess() == methodAccess || methodAccess == ACCESS.ACC_UNKNOWN) &&
                         methsym.isStatic == isStatic &&
                         methsym.isVirtual == isVirtual &&
-                        methsym.typeVars.size == cMethodTyVars &&
+                        methsym.typeVars.Count == cMethodTyVars &&
                         GetTypeManager().SubstEqualTypes(methsym.RetType, returnType, null, methsym.typeVars, SubstTypeFlags.DenormMeth) &&
                         GetTypeManager().SubstEqualTypeArrays(methsym.Params, argumentTypes, (TypeArray)null,
                             methsym.typeVars, SubstTypeFlags.DenormMeth) &&
@@ -712,7 +709,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new PredefinedPropertyInfo(   PREDEFPROP.PP_G_OPTIONAL_VALUE,                                MethodRequiredEnum.Optional,   PredefinedName.PN_CAP_VALUE,               PREDEFMETH.PM_G_OPTIONAL_GETVALUE,                             PREDEFMETH.PM_COUNT  ),
         };
 
-        public static PredefinedPropertyInfo GetPropInfo(PREDEFPROP property)
+        private static PredefinedPropertyInfo GetPropInfo(PREDEFPROP property)
         {
             RETAILVERIFY(property > PREDEFPROP.PP_FIRST && property < PREDEFPROP.PP_COUNT);
             RETAILVERIFY(s_predefinedProperties[(int)property].property == property);
@@ -720,7 +717,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return s_predefinedProperties[(int)property];
         }
 
-        public static PredefinedMethodInfo GetMethInfo(PREDEFMETH method)
+        private static PredefinedMethodInfo GetMethInfo(PREDEFMETH method)
         {
             RETAILVERIFY(method > PREDEFMETH.PM_FIRST && method < PREDEFMETH.PM_COUNT);
             RETAILVERIFY(s_predefinedMethods[(int)method].method == method);

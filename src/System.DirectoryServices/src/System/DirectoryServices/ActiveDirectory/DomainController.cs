@@ -929,14 +929,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             DirectoryEntry de;
 
-            if (DirectoryContext.ServerBindSupported)
-            {
-                de = new DirectoryEntry("LDAP://" + dc.Name + "/RootDSE", context.UserName, context.Password, Utils.DefaultAuthType | AuthenticationTypes.ServerBind);
-            }
-            else
-            {
-                de = new DirectoryEntry("LDAP://" + dc.Name + "/RootDSE", context.UserName, context.Password, Utils.DefaultAuthType);
-            }
+            de = new DirectoryEntry("LDAP://" + dc.Name + "/RootDSE", context.UserName, context.Password, Utils.DefaultAuthType | AuthenticationTypes.ServerBind);
 
             de.Bind(true);
         }
@@ -1222,7 +1215,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
             {
                 // cannot bind to the domain controller as the object has been
-                // disposed (finalizer has been supressed)
+                // disposed (finalizer has been suppressed)
                 throw new ObjectDisposedException(GetType().Name);
             }
 
@@ -1351,14 +1344,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             DirectoryEntry de = new DirectoryEntry("LDAP://" + Name);
 
-            if (DirectoryContext.ServerBindSupported)
-            {
-                de.AuthenticationType = Utils.DefaultAuthType | AuthenticationTypes.ServerBind;
-            }
-            else
-            {
-                de.AuthenticationType = Utils.DefaultAuthType;
-            }
+            de.AuthenticationType = Utils.DefaultAuthType | AuthenticationTypes.ServerBind;
 
             de.Username = context.UserName;
             de.Password = context.Password;

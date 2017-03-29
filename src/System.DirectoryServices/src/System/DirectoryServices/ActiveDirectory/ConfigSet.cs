@@ -396,10 +396,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (isServer)
             {
-                if (DirectoryContext.ServerBindSupported)
-                {
-                    authType |= AuthenticationTypes.ServerBind;
-                }
+                authType |= AuthenticationTypes.ServerBind;
+                
                 if (isGC)
                 {
                     rootEntry = new DirectoryEntry("GC://" + forestContext.GetServerName(), forestContext.UserName, forestContext.Password, authType);
@@ -618,7 +616,7 @@ namespace System.DirectoryServices.ActiveDirectory
             throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
         }
 
-        /// <returns>Returns a DomainController object for the DC that holds the the specified FSMO role</returns>
+        /// <returns>Returns a DomainController object for the DC that holds the specified FSMO role</returns>
         private AdamInstance GetRoleOwner(AdamRole role)
         {
             DirectoryEntry entry = null;
