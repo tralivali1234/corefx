@@ -1,6 +1,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <PreReleaseLabel>beta</PreReleaseLabel>
+    <PreReleaseLabel>preview1</PreReleaseLabel>
     <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(ProjectDir)pkg/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)pkg/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
@@ -16,7 +16,6 @@
     <XmlDocFileRoot>$(PackagesDir)Microsoft.Private.Intellisense/1.0.0-rc4-24206-00/xmldocs</XmlDocFileRoot>
     <!-- We're currently not building a "live" baseline, instead we're using .NETCore 1.0 RTM stable versions as the baseline -->
     <SkipBaseLineCheck>true</SkipBaseLineCheck>
-    <LineupPackageVersion Condition="'$(LineupPackageVersion)' == ''">2.0.0</LineupPackageVersion>
     <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">2.0.0</PlatformPackageVersion>
 
     <!-- by default all packages will use the same version which revs with respect to product version -->
@@ -61,7 +60,7 @@
           Include="$(SyncInfoFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
-    
+
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
     <File Condition="'$(IncludeDesignerMarker)' != 'false'"
           Include="$(ProjectDir)pkg/useSharedDesignerContext.txt">

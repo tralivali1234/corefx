@@ -1186,7 +1186,7 @@ namespace System.Security.Cryptography.Xml.Tests
             0xfa, 0x75, 0x89, 0x67, 0x33, 0x01, 0xd0, 0xb0, 0x13, 0xfa, 0x11,
             0x94, 0xac, 0x02, 0x02, 0x07, 0xd0 };
 
-        public SignedXml SignHMAC(string uri, KeyedHashAlgorithm mac, bool ok)
+        public SignedXml SignHMAC(string uri, KeyedHashAlgorithm mac, bool expectedToVerify)
         {
             string input = "<foo/>";
 
@@ -1201,28 +1201,39 @@ namespace System.Security.Cryptography.Xml.Tests
 
             sig.ComputeSignature(mac);
             doc.DocumentElement.AppendChild(doc.ImportNode(sig.GetXml(), true));
-            // doc.Save (System.Console.Out);
+            // doc.Save(System.Console.Out);
 
             sig.LoadXml(doc.DocumentElement["Signature"]);
-            Assert.Equal(ok, sig.CheckSignature(mac));
+            Assert.Equal(expectedToVerify, sig.CheckSignature(mac));
             return sig;
         }
 
-        static byte[] hmackey = new byte[0];
+        private static byte[] emptyHmacKey = new byte[0];
+        private static byte[] badKey = new byte[3] { 1, 2, 3 };
+
+        public static object[][] HmacKeys = new object[][] {
+            new object[] { new byte[0] },
+            new object[] { new byte[5] { 1, 2, 3, 4, 10 } }
+        };
+
+        private const string moreHmacMD5 = "http://www.w3.org/2001/04/xmldsig-more#hmac-md5";
         private const string more256 = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256";
         private const string more384 = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha384";
         private const string more512 = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512";
         private const string moreripe = "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160";
 
-        [Fact]
-        public void SignHMAC_SHA256()
+        [Theory, MemberData(nameof(HmacKeys))]
+        public void SignHMAC_SHA256(byte[] hmackey)
         {
-            SignedXml sign = SignHMAC(EncryptedXml.XmlEncSHA256Url, new HMACSHA256(hmackey), true);
+            var hmac = new HMACSHA256(hmackey);
+            Assert.Equal(hmackey, hmac.Key);
+
+            SignedXml sign = SignHMAC(EncryptedXml.XmlEncSHA256Url, hmac, true);
             Assert.Equal(more256, sign.SignatureMethod);
         }
 
-        [Fact]
-        public void SignHMAC_SHA256_Bad()
+        [Theory, MemberData(nameof(HmacKeys))]
+        public void SignHMAC_SHA256_Bad(byte[] hmackey)
         {
             SignedXml sign = SignHMAC(more256, new HMACSHA256(hmackey), false);
             Assert.Equal(more256, sign.SignatureMethod);
@@ -1239,18 +1250,22 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // verify MS-generated signature
-            Assert.True(sign.CheckSignature(new HMACSHA256(hmackey)));
+            Assert.False(sign.CheckSignature(new HMACSHA256(badKey)));
+            Assert.True(sign.CheckSignature(new HMACSHA256(emptyHmacKey)));
         }
 
-        [Fact]
-        public void SignHMAC_SHA512()
+        [Theory, MemberData(nameof(HmacKeys))]
+        public void SignHMAC_SHA512(byte[] hmackey)
         {
-            SignedXml sign = SignHMAC(EncryptedXml.XmlEncSHA512Url, new HMACSHA512(hmackey), true);
+            var hmac = new HMACSHA512(hmackey);
+            Assert.Equal(hmackey, hmac.Key);
+
+            SignedXml sign = SignHMAC(EncryptedXml.XmlEncSHA512Url, hmac, true);
             Assert.Equal(more512, sign.SignatureMethod);
         }
 
-        [Fact]
-        public void SignHMAC_SHA512_Bad()
+        [Theory, MemberData(nameof(HmacKeys))]
+        public void SignHMAC_SHA512_Bad(byte[] hmackey)
         {
             SignedXml sign = SignHMAC(more512, new HMACSHA512(hmackey), false);
             Assert.Equal(more512, sign.SignatureMethod);
@@ -1267,20 +1282,24 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // verify MS-generated signature
-            Assert.True(sign.CheckSignature(new HMACSHA512(hmackey)));
+            Assert.False(sign.CheckSignature(new HMACSHA512(badKey)));
+            Assert.True(sign.CheckSignature(new HMACSHA512(emptyHmacKey)));
         }
 
-        [Fact]
-        public void SignHMAC_SHA384()
+        [Theory, MemberData(nameof(HmacKeys))]
+        public void SignHMAC_SHA384(byte[] hmackey)
         {
+            var hmac = new HMACSHA384(hmackey);
+            Assert.Equal(hmackey, hmac.Key);
+
             // works as long as the string can be used by CryptoConfig to create 
             // an instance of the required hash algorithm
-            SignedXml sign = SignHMAC("SHA384", new HMACSHA384(hmackey), true);
+            SignedXml sign = SignHMAC("SHA384", hmac, true);
             Assert.Equal(more384, sign.SignatureMethod);
         }
 
-        [Fact]
-        public void SignHMAC_SHA384_Bad()
+        [Theory, MemberData(nameof(HmacKeys))]
+        public void SignHMAC_SHA384_Bad(byte[] hmackey)
         {
             // we can't verity the signature if the URI is used
             SignedXml sign = SignHMAC(more384, new HMACSHA384(hmackey), false);
@@ -1298,7 +1317,43 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // verify MS-generated signature
-            Assert.True(sign.CheckSignature(new HMACSHA384(hmackey)));
+            Assert.False(sign.CheckSignature(new HMACSHA384(badKey)));
+            Assert.True(sign.CheckSignature(new HMACSHA384(emptyHmacKey)));
+        }
+
+        [Theory, MemberData(nameof(HmacKeys))]
+        public void SignHMAC_MD5(byte[] hmackey)
+        {
+            var hmac = new HMACMD5(hmackey);
+            Assert.Equal(hmackey, hmac.Key);
+
+            // works as long as the string can be used by CryptoConfig to create 
+            // an instance of the required hash algorithm
+            SignedXml sign = SignHMAC("MD5", hmac, true);
+            Assert.Equal(moreHmacMD5, sign.SignatureMethod);
+        }
+
+        [Theory, MemberData(nameof(HmacKeys))]
+        public void SignHMAC_MD5_Bad(byte[] hmackey)
+        {
+            // we can't verity the signature if the URI is used
+            SignedXml sign = SignHMAC(moreHmacMD5, new HMACMD5(hmackey), false);
+            Assert.Equal(moreHmacMD5, sign.SignatureMethod);
+        }
+
+        [Fact]
+        public void VerifyHMAC_MD5()
+        {
+            string xml = @"<?xml version=""1.0"" encoding=""Windows-1252""?><foo><Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2001/04/xmldsig-more#hmac-md5"" /><Reference URI=""""><Transforms><Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" /></Transforms><DigestMethod Algorithm=""MD5"" /><DigestValue>TH7ysbozJWVIWh/1K5bP1w==</DigestValue></Reference></SignedInfo><SignatureValue>tJ6m5YVu1jN1WgKWv3AXFQ==</SignatureValue></Signature></foo>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            SignedXml sign = new SignedXml(doc);
+            sign.LoadXml(doc.DocumentElement["Signature"]);
+
+            // verify MS-generated signature
+            Assert.False(sign.CheckSignature(new HMACMD5(badKey)));
+            Assert.True(sign.CheckSignature(new HMACMD5(emptyHmacKey)));
         }
 
         // CVE-2009-0217
