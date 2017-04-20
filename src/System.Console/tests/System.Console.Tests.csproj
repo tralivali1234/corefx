@@ -25,6 +25,7 @@
     <Compile Include="SetOut.cs" />
     <Compile Include="NegativeTesting.cs" />
     <Compile Include="ConsoleEncoding.cs" />
+    <Compile Include="ConsoleEncoding.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="SyncTextReader.cs" />
     <Compile Include="SyncTextWriter.cs" />
     <Compile Include="Timeout.cs" />
@@ -33,6 +34,9 @@
     <Compile Include="TermInfo.cs" />
     <Compile Include="RedirectedStream.cs" />
     <Compile Include="ReadKey.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\InterceptStreamWriter.cs">
       <Link>Common\System\IO\InterceptStreamWriter.cs</Link>
     </Compile>
