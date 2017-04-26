@@ -15,6 +15,7 @@ using System.Xml.Schema;
 using System.Xml.Serialization;
 using System.IO;
 using System.Text;
+using System.Reflection;
 
 namespace SerializationTypes
 {
@@ -3157,6 +3158,38 @@ public class TypeWithTimeSpanProperty
     public TimeSpan TimeSpanProperty;
 }
 
+public class TypeWithDefaultTimeSpanProperty
+{
+    public TypeWithDefaultTimeSpanProperty()
+    {
+        TimeSpanProperty = GetDefaultValue("TimeSpanProperty");
+        TimeSpanProperty2 = GetDefaultValue("TimeSpanProperty2");
+    }
+
+    [DefaultValue(typeof(TimeSpan), "00:01:00")]
+    public TimeSpan TimeSpanProperty { get; set; }
+
+    [DefaultValue(typeof(TimeSpan), "00:00:01")]
+    public TimeSpan TimeSpanProperty2 { get; set; }
+
+    public TimeSpan GetDefaultValue(string propertyName)
+    {
+        var property = this.GetType().GetProperty(propertyName);
+
+        var attribute = property.GetCustomAttribute(typeof(DefaultValueAttribute))
+                as DefaultValueAttribute;
+
+        if (attribute != null)
+        {
+            return (TimeSpan)attribute.Value;
+        }
+        else
+        {
+            return new TimeSpan(0, 0, 0);
+        }
+    }
+}
+
 public class TypeWithByteProperty
 {
     public byte ByteProperty;
@@ -4909,4 +4942,40 @@ public class DerivedType : BaseType
 {
     [DataMember]
     public string StrDerived = "derived";
+}
+
+public class Group1WithXmlTextAttr
+{
+    [XmlText(typeof(string))]
+    [XmlElement(typeof(int))]
+    [XmlElement(typeof(double))]
+    public object[] All = new object[] { 321, "One", 2, 3.0, "Two" };
+}
+
+public class Group2WithXmlTextAttr
+{
+    [XmlText(Type = typeof(GroupType))]
+    public GroupType TypeOfGroup;
+}
+
+public enum GroupType
+{
+    Small,
+    Medium,
+    Large
+}
+
+public class Group3WithXmlTextAttr
+{
+    [XmlText(Type = typeof(DateTime))]
+    public DateTime CreationTime = new DateTime(2017, 4, 20, 3, 8, 15, DateTimeKind.Utc);
+}
+
+public class Group4WithXmlTextAttr
+{
+    [XmlText(Type = typeof(DateTime))]
+    public DateTime CreationTime = new DateTime(2017, 4, 20, 3, 8, 15, DateTimeKind.Utc);
+
+    [XmlText]
+    public string Text = "SomeText";
 }
