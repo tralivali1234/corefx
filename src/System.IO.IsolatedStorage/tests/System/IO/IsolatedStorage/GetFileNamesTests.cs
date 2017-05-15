@@ -12,6 +12,7 @@ namespace System.IO.IsolatedStorage
     public class GetFileNamesTests : IsoStorageTest
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18268")]
         public void GetFileNames_ThrowsArgumentNull()
         {
             using (var isf = IsolatedStorageFile.GetUserStoreForApplication())
@@ -32,17 +33,17 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        public void GetFileNames_ThrowsIsolatedStorageException()
+        public void GetFileNames_Deleted_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
                 isf.Remove();
-                Assert.Throws<IsolatedStorageException>(() => isf.GetFileNames("foo"));
+                Assert.Throws<InvalidOperationException>(() => isf.GetFileNames("foo"));
             }
         }
 
         [Fact]
-        public void GetFileNames_ThrowsInvalidOperationException()
+        public void GetFileNames_Closed_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
@@ -61,6 +62,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void GetFileNames_GetsFileNames(PresetScopes scope)
         {
             TestHelper.WipeStores();

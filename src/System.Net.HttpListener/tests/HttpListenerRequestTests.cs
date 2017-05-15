@@ -24,6 +24,7 @@ namespace System.Net.Tests
         {
             await GetRequest("POST", "", new string[] { acceptString }, (_, request) =>
             {
+                Assert.Same(request.AcceptTypes, request.AcceptTypes);
                 Assert.Equal(expected, request.AcceptTypes);
             });
         }
@@ -186,7 +187,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
         [InlineData("Connection: ", false)]
         [InlineData("Connection: Connection\r\nUpgrade: ", false)]
         [InlineData("Connection: Test1\r\nUpgrade: Test2", false)]
@@ -195,6 +196,12 @@ namespace System.Net.Tests
         [InlineData("Unknown-Header: Test", false)]
         public async Task IsWebSocketRequest_GetProperty_ReturnsExpected(string webSocketString, bool expected)
         {
+            // Skip on Windows 7 or UAP platforms. WebSocket support is not present.
+            if (PlatformDetection.IsWindows7 || !PlatformDetection.IsNotOneCoreUAP)
+            {
+                return;
+            }
+
             await GetRequest("POST", "", new string[] { webSocketString }, (_, request) =>
             {
                 Assert.Equal(expected, request.IsWebSocketRequest);
@@ -213,12 +220,12 @@ namespace System.Net.Tests
         {
             await GetRequest("POST", "", new string[] { userLanguageString }, (_, request) =>
             {
+                Assert.Same(request.UserLanguages, request.UserLanguages);
                 Assert.Equal(expected, request.UserLanguages);
             });
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [PlatformSpecific(TestPlatforms.Windows)] // We get the ClientCertificate during connection on Unix.
         public async Task ClientCertificateError_GetNotInitialized_ThrowsInvalidOperationException()
         {
             await GetRequest("POST", null, null, (_, request) =>
@@ -251,7 +258,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(18128, TestPlatforms.AnyUnix)] // Hangs forever.
         public async Task GetClientCertificateAsync_NoCertificate_ReturnsNull()
         {
             await GetRequest("POST", null, null, (_, request) =>
@@ -270,7 +276,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [PlatformSpecific(TestPlatforms.Windows)] // We get the ClientCertificate during connection on Unix.
         public async Task EndGetClientCertificate_InvalidAsyncResult_ThrowsArgumentException()
         {
             await GetRequest("POST", null, null, (socket1, request1) =>
@@ -286,7 +291,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [PlatformSpecific(TestPlatforms.Windows)] // We get the ClientCertificate during connection on Unix.
         public async Task EndGetClientCertificate_AlreadyCalled_ThrowsInvalidOperationException()
         {
             await GetRequest("POST", null, null, (_, request) =>
@@ -445,6 +449,47 @@ namespace System.Net.Tests
             });
         }
 
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData("1.1", new string[] { "Proxy-Connection: random" }, true)]
+        [InlineData("1.1", new string[] { "Proxy-Connection: close" }, false)]
+        [InlineData("1.1", new string[] { "proxy-connection: CLOSE" }, false)]
+        [InlineData("1.1", new string[] { "Proxy-Connection: keep-alive" }, true)]
+        [InlineData("1.1", new string[] { "Proxy-Connection: " }, true)]
+        [InlineData("1.1", new string[] { "Connection: random" }, true)]
+        [InlineData("1.1", new string[] { "Connection: close" }, false)]
+        [InlineData("1.1", new string[] { "connection: CLOSE" }, false)]
+        [InlineData("1.1", new string[] { "Connection: keep-alive" }, true)]
+        [InlineData("1.1", new string[] { "Connection: " }, true)]
+        [InlineData("1.1", new string[] { "Keep-Alive: true" }, true)]
+        [InlineData("1.1", new string[] { "Proxy-Connection: ", "Connection: close" }, false)]
+        [InlineData("1.1", new string[] { "Proxy-Connection: ", "Connection: close", "Keep-Alive: true" }, false)]
+        [InlineData("1.1", new string[] { "Connection: close", "Keep-Alive: true" }, false)]
+        [InlineData("1.1", new string[] { "UnknownHeader: random" }, true)]
+        [InlineData("1.0", new string[] { "Keep-Alive: true" }, true)]
+        [InlineData("1.0", new string[] { "Keep-Alive: " }, false)]
+        [InlineData("1.0", new string[] { "UnknownHeader: random" }, false)]
+        public async Task KeepAlive_GetProperty_ReturnsExpected(string httpVersion, string[] headers, bool expected)
+        {
+            await GetRequest("POST", "", headers, (_, request) =>
+            {
+                Assert.Equal(request.KeepAlive, request.KeepAlive);
+                Assert.Equal(expected, request.KeepAlive);
+            }, httpVersion: httpVersion);
+        }
+
+        [Theory]
+        [InlineData("1.0")]
+        [InlineData("1.1")]
+        public async Task ProtocolVersion_GetProperty_ReturnsExpected(string httpVersion)
+        {
+            var version = new Version(httpVersion);
+
+            await GetRequest("POST", "", new string[0], (_, request) =>
+            {
+                Assert.Equal(version, request.ProtocolVersion);
+            }, httpVersion: httpVersion);
+        }
+
         public static IEnumerable<object[]> Cookies_TestData()
         {
             yield return new object[]
@@ -452,6 +497,40 @@ namespace System.Net.Tests
                 "cookie: name=value", new CookieCollection
                 {
                     new Cookie("name", "value")
+                }
+            };
+
+            // Not added if the cookie already exists.
+            yield return new object[]
+            {
+                "cookie: name=value,name=value", new CookieCollection
+                {
+                    new Cookie("name", "value")
+                }
+            };
+
+            yield return new object[]
+            {
+                "cookie: name=value,name=value2", new CookieCollection
+                {
+                    new Cookie("name", "value2")
+                }
+            };
+
+            yield return new object[]
+            {
+                "cookie: name=value,name=value;$port=\"200\"", new CookieCollection
+                {
+                    new Cookie("name", "value") { Port = "\"200\"" }
+                }
+            };
+
+            // Cookie with a greater variant (e.g. Rfc2109) is preferred over a lower variant (e.g. Plain).
+            yield return new object[]
+            {
+                "cookie: name=value;$port=\"200\",name=value", new CookieCollection
+                {
+                    new Cookie("name", "value") { Port = "\"200\"" }
                 }
             };
 
@@ -465,23 +544,20 @@ namespace System.Net.Tests
                 }
             };
 
-            // [ActiveIssue(18128)] // Hangs on Unix
-            if (PlatformDetection.IsWindows)
+            yield return new object[]
             {
-                yield return new object[]
+                "cookie: name=value;$port=\"80\";$Path=path;$Domain=domain", new CookieCollection
                 {
-                    "cookie: name=value;$port=\"80\";$Path=path;$Domain=domain", new CookieCollection
-                    {
-                        new Cookie("name", "value") { Port = "\"80\"", Path = "path", Domain = "domain" }
-                    }
-                };
+                    new Cookie("name", "value") { Port = "\"80\"", Path = "path", Domain = "domain" }
+                }
+            };
 
-                yield return new object[] { "cookie: =value", new CookieCollection() };
-            }
+            yield return new object[] { "cookie: =value", new CookieCollection() };
 
             yield return new object[] { "cookie: $Path", new CookieCollection() };
             yield return new object[] { "cookie: $Domain", new CookieCollection() };
             yield return new object[] { "cookie: $Port", new CookieCollection() };
+
             yield return new object[]
             {
                 "cookie:name=value; domain=.domain.com", new CookieCollection
@@ -506,7 +582,6 @@ namespace System.Net.Tests
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(Cookies_TestData))]
-        [ActiveIssue(18486, TestPlatforms.Windows)]
         public async Task Cookies_GetProperty_ReturnsExpected(string cookieString, CookieCollection expected)
         {
             await GetRequest("POST", null, new[] { cookieString }, (_, request) =>
@@ -523,12 +598,12 @@ namespace System.Net.Tests
             });
         }
 
-        private async Task GetRequest(string requestType, string query, string[] headers, Action<Socket, HttpListenerRequest> requestAction, bool sendContent = true)
+        private async Task GetRequest(string requestType, string query, string[] headers, Action<Socket, HttpListenerRequest> requestAction, bool sendContent = true, string httpVersion = "1.1")
         {
             using (HttpListenerFactory factory = new HttpListenerFactory())
             using (Socket client = factory.GetConnectedSocket())
             {
-                client.Send(factory.GetContent(requestType, query, sendContent ? "Text" : "", headers, true));
+                client.Send(factory.GetContent(httpVersion, requestType, query, sendContent ? "Text" : "", headers, true));
 
                 HttpListener listener = factory.GetListener();
                 HttpListenerContext context = await listener.GetContextAsync();
