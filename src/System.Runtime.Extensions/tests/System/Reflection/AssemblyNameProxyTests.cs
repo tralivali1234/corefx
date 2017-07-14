@@ -14,11 +14,12 @@ namespace System.Reflection.Tests
     public static class AssemblyNameProxyTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corert/issues/3253 - AssemblyName.GetAssemblyName(string file) not supported on UapAot", TargetFrameworkMonikers.UapAot)]
         public static void GetAssemblyName_AssemblyNameProxy()
         {
             AssemblyNameProxy anp = new AssemblyNameProxy();
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => anp.GetAssemblyName(null));
-            Assert.Throws<ArgumentException>(() => anp.GetAssemblyName(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => anp.GetAssemblyName(string.Empty));
             Assert.Throws<FileNotFoundException>(() => anp.GetAssemblyName(Guid.NewGuid().ToString("N")));
 
             Assembly a = typeof(AssemblyNameProxyTests).Assembly;

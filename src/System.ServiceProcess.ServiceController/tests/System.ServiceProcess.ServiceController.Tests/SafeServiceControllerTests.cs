@@ -6,11 +6,12 @@ using Xunit;
 
 namespace System.ServiceProcess.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Appx doesn't allow to access ServiceController")]
     public static class SafeServiceControllerTests
     {
         private const string KeyIsoSvcName = "KEYISO";
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19223
         public static void GetServices()
         {
             bool foundKeyIsoSvc = false;

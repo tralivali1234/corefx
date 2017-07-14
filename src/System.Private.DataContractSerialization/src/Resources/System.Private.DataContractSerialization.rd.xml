@@ -17,9 +17,7 @@
             <Method Name="BuildIncrementCollectionCountDelegate{T}" Dynamic="Required" />
           </Type>
         </Type>
-        <Type Name="DataContractSerializer">
-          <Property Name="Option" Dynamic="Required" />
-        </Type>
+        <Type Name="DateTimeOffsetAdapter" Dynamic="Required All" />
         <Type Name="FastInvokerBuilder" Dynamic="Required All" />
         <Type Name="ReflectionReader">
           <Method Name="GetCollectionSetItemDelegate{T}" Dynamic="Required" />

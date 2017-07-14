@@ -10,18 +10,18 @@ namespace System.Net.Tests
 {
     public class HttpListenerTimeoutManagerTests
     {
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
         [InlineData(-1)]
         [InlineData((long)uint.MaxValue + 1)]
         public void MinSendBytesPerSecond_NotUInt_ThrowsArgumentOutOfRangeException(long value)
         {
             using (var listener = new HttpListener())
             {
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.MinSendBytesPerSecond = value);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.MinSendBytesPerSecond = value);
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
         [InlineData(-1)]
         [InlineData((uint)ushort.MaxValue + 1)]
         public void TimeoutValue_NotUShort_ThrowsArgumentOutOfRangeException(long totalSeconds)
@@ -29,12 +29,21 @@ namespace System.Net.Tests
             using (var listener = new HttpListener())
             {
                 TimeSpan timeSpan = TimeSpan.FromSeconds(totalSeconds);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.EntityBody = timeSpan);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.DrainEntityBody = timeSpan);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.RequestQueue = timeSpan);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.IdleConnection = timeSpan);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.HeaderWait = timeSpan);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.EntityBody = timeSpan);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.DrainEntityBody = timeSpan);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.RequestQueue = timeSpan);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.IdleConnection = timeSpan);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.HeaderWait = timeSpan);
             }
+        }
+
+        [Fact]
+        public void Get_Disposed_ThrowsObjectDisposedException()
+        {
+            var listener = new HttpListener();
+            listener.Close();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.TimeoutManager);
         }
     }
 
@@ -114,7 +123,7 @@ namespace System.Net.Tests
 
         public void Dispose() => _listener.Close();
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void TimeoutManager_AccessNoStart_Success()
         {
             // Access the TimeoutManager without calling Start and make sure it is initialized.
@@ -125,7 +134,7 @@ namespace System.Net.Tests
             Assert.Equal(rate, timeoutManager.MinSendBytesPerSecond);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void TimeoutManager_AccessAfterStart_Success()
         {
             // Access the TimeoutManager after calling Start and make sure it is initialized.
@@ -137,7 +146,7 @@ namespace System.Net.Tests
             Assert.Equal(rate, timeoutManager.MinSendBytesPerSecond);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void TimeoutManager_AccessAfterClose_GetObjectDisposedException()
         {
             // Access the TimeoutManager after calling Close and make sure it is not accessible.
@@ -146,7 +155,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => _listener.TimeoutManager);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void TimeoutManager_AccessBeforeAndAfterClose_GetObjectDisposedException()
         {
             // Access the TimeoutManager after calling Close and make sure it is not accessible.
@@ -157,7 +166,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => timeoutManager.MinSendBytesPerSecond = 10);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void TimeoutManager_AccessAfterStop_Success()
         {
             // Access the TimeoutManager after calling Stop and make sure it is accessible.
@@ -171,7 +180,7 @@ namespace System.Net.Tests
             Assert.Equal(rate, timeoutManager.MinSendBytesPerSecond);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void DrainEntityBody_SetTimeoutNoStart_GetReturnsNewValue()
         {
             // Set the DrainEntityBody timeout without calling Start and make sure that native layer return new value.
@@ -181,7 +190,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.DrainEntityBody.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void DrainEntityBody_SetTimeoutAfterStart_GetReturnsNewValue()
         {
             // Set the DrainEntityBody timeout after calling Start and make sure that native layer return new value.
@@ -192,7 +201,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.DrainEntityBody.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void EntityBody_SetTimeoutNoStart_GetReturnsNewValue()
         {
             // Set the DrainEntityBody timeout without calling Start and make sure that native layer return new value.
@@ -202,7 +211,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.EntityBody.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void EntityBody_SetTimeoutAfterStart_GetReturnsNewValue()
         {
             // Set the EntityBody timeout after calling Start and make sure that native layer return new value.
@@ -213,7 +222,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.EntityBody.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void HeaderWait_SetTimeoutNoStart_GetReturnsNewValue()
         {
             // Set the HeaderWait timeout without calling Start and make sure that native layer return new value.
@@ -223,7 +232,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.HeaderWait.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void HeaderWait_SetTimeoutAfterStart_GetReturnsNewValue()
         {
             // Set the HeaderWait timeout after calling Start and make sure that native layer return new value.
@@ -234,7 +243,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.HeaderWait.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void RequestQueue_SetTimeoutNoStart_GetReturnsNewValue()
         {
             // Set the DrainEntityBody timeout without calling Start and make sure that native layer return new value.
@@ -244,7 +253,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.RequestQueue.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void RequestQueue_SetTimeoutAfterStart_GetReturnsNewValue()
         {
             // Set the RequestQueue timeout after calling Start and make sure that native layer return new value.
@@ -255,7 +264,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.RequestQueue.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void IdleConnection_SetTimeoutNoStart_GetReturnsNewValue()
         {
             // Set the IdleConnection timeout without calling Start and make sure that native layer return new value.
@@ -265,7 +274,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.IdleConnection.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void IdleConnection_SetTimeoutAfterStart_GetReturnsNewValue()
         {
             // Set the IdleConnection timeout after calling Start and make sure that native layer return new value.
@@ -276,7 +285,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.IdleConnection.TotalSeconds);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void MinSendBytesPerSecond_SetNoStart_GetReturnsNewValue()
         {
             // Set the MinSendBytesPerSecond timeout without calling Start and make sure that native layer 
@@ -287,7 +296,7 @@ namespace System.Net.Tests
             Assert.Equal(rate, _listener.TimeoutManager.MinSendBytesPerSecond);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void MinSendBytesPerSecond_SetAfterStart_GetReturnsNewValue()
         {
             // Set the MinSendBytesPerSecond timeout after calling Start and make sure that native 
@@ -299,7 +308,7 @@ namespace System.Net.Tests
             Assert.Equal(rate, _listener.TimeoutManager.MinSendBytesPerSecond);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void MinSendBytesPerSecond_SetAfterClose_GetObjectDisposedException()
         {
             // Set the MinSendBytesPerSecond timeout after calling Close and make sure that we get the exception.
@@ -308,7 +317,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => _listener.TimeoutManager.MinSendBytesPerSecond = 10 * 1024 * 1024);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public void MinSendBytesPerSecond_SetAfterStop_GetReturnsNewValue()
         {
             // Set the MinSendBytesPerSecond timeout after calling Stop and make sure that native 
@@ -327,7 +336,8 @@ namespace System.Net.Tests
             uint[] timeouts = new uint[6];
 
             // We need url group id which is private so we get it using reflection.
-            FieldInfo info = typeof(HttpListener).GetField("_urlGroupId", BindingFlags.Instance | BindingFlags.NonPublic);
+            string urlGroupIdName = PlatformDetection.IsFullFramework ? "m_UrlGroupId" : "_urlGroupId";
+            FieldInfo info = typeof(HttpListener).GetField(urlGroupIdName, BindingFlags.Instance | BindingFlags.NonPublic);
             ulong urlGroupId = (ulong)info.GetValue(_listener);
 
             HTTP_TIMEOUT_LIMIT_INFO timeoutinfo = new HTTP_TIMEOUT_LIMIT_INFO();
@@ -368,7 +378,7 @@ namespace System.Net.Tests
         }
 
 
-        [Theory]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         [InlineData(1.3, 1)]
         [InlineData(1.6, 2)]
         public void TimeoutValue_Double_Truncates(double seconds, int expected)
@@ -380,21 +390,11 @@ namespace System.Net.Tests
                 Assert.Equal(expected, listener.TimeoutManager.EntityBody.TotalSeconds);
             }
         }
-
-        [Fact]
-        public void Get_Disposed_ThrowsObjectDisposedException()
-        {
-            var listener = new HttpListener();
-            listener.Close();
-
-            Assert.Throws<ObjectDisposedException>(() => listener.TimeoutManager);
-        }
     }
 
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public class HttpListenerTimeoutManagerUnixTests
     {
-        [Fact]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsManagedImplementation))] // [PlatformSpecific(TestPlatforms.AnyUnix)] // managed implementation doesn't support all members
         public void Properties_DefaultValues()
         {
             using (var listener = new HttpListener())
@@ -410,7 +410,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsManagedImplementation))] // [PlatformSpecific(TestPlatforms.AnyUnix)] // managed implementation doesn't support all members
         public void UnsupportedProperties_Throw()
         {
             using (var listener = new HttpListener())
@@ -423,7 +423,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsManagedImplementation))] // [PlatformSpecific(TestPlatforms.AnyUnix)] // managed implementation doesn't support all members
         public void DrainEntityBody_Roundtrips()
         {
             using (var listener = new HttpListener())
@@ -437,7 +437,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsManagedImplementation))] // [PlatformSpecific(TestPlatforms.AnyUnix)] // managed implementation doesn't support all members
         public void IdleConnection_Roundtrips()
         {
             using (var listener = new HttpListener())

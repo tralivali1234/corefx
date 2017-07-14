@@ -13,7 +13,7 @@ namespace System.Net.Tests
 {
     public class HttpListenerTests
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void IgnoreWriteExceptions_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -22,7 +22,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.IgnoreWriteExceptions = false);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void Stop_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -31,7 +31,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.Stop());
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void IsListening_NotStarted_ReturnsFalse()
         {
             using (var listener = new HttpListener())
@@ -40,7 +40,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void IsListening_Disposed_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -51,7 +51,7 @@ namespace System.Net.Tests
             Assert.False(listener.IsListening);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void IsListening_Aborted_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -62,7 +62,7 @@ namespace System.Net.Tests
             Assert.False(listener.IsListening);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void IsListening_Stopped_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -73,7 +73,7 @@ namespace System.Net.Tests
             Assert.False(listener.IsListening);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void Start_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -82,7 +82,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.Start());
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void GetContext_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -92,7 +92,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.BeginGetContext(null, null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void GetContext_NotStarted_ThrowsInvalidOperationException()
         {
             using (var listener = new HttpListener())
@@ -102,7 +102,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void GetContext_NoPrefixes_ThrowsInvalidOperationException()
         {
             using (var listener = new HttpListener())
@@ -113,17 +113,16 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void EndGetContext_NullAsyncResult_ThrowsArgumentNullException()
         {
             using (var listener = new HttpListener())
             {
-                Assert.Throws<ArgumentNullException>("asyncResult", () => listener.EndGetContext(null));
+                AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => listener.EndGetContext(null));
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed - hangs forever.
+        [Fact]
         public void EndGetContext_InvalidAsyncResult_ThrowsArgumentException()
         {
             using (var listener1 = new HttpListener())
@@ -133,12 +132,12 @@ namespace System.Net.Tests
                 listener2.Start();
 
                 IAsyncResult beginGetContextResult = listener1.BeginGetContext(null, null);
-                Assert.Throws<ArgumentException>("asyncResult", () => listener2.EndGetContext(new CustomAsyncResult()));
-                Assert.Throws<ArgumentException>("asyncResult", () => listener2.EndGetContext(beginGetContextResult));
+                AssertExtensions.Throws<ArgumentException>("asyncResult", () => listener2.EndGetContext(new CustomAsyncResult()));
+                AssertExtensions.Throws<ArgumentException>("asyncResult", () => listener2.EndGetContext(beginGetContextResult));
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
         public void EndGetContext_AlreadyCalled_ThrowsInvalidOperationException()
         {
             using (var listenerFactory = new HttpListenerFactory())

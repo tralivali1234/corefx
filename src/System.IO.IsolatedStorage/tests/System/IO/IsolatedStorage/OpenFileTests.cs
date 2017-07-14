@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
+    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class OpenFileTests : IsoStorageTest
     {
         [Fact]
@@ -62,14 +62,14 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>(() => isf.OpenFile("\0bad", FileMode.Create));
-                Assert.Throws<ArgumentException>(() => isf.OpenFile("\0bad", FileMode.Create, FileAccess.ReadWrite));
-                Assert.Throws<ArgumentException>(() => isf.OpenFile("\0bad", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.OpenFile("\0bad", FileMode.Create));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.OpenFile("\0bad", FileMode.Create, FileAccess.ReadWrite));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.OpenFile("\0bad", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
             }
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
+        [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void OpenFile_PassesFileShare()
         {
             TestHelper.WipeStores();
@@ -92,7 +92,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
+        [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void OpenFile_PassesFileAccess()
         {
             TestHelper.WipeStores();
@@ -115,7 +115,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
+        [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void OpenFile_PassesFileMode()
         {
             TestHelper.WipeStores();
@@ -132,7 +132,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
+        [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void OpenFile_Existence(PresetScopes scope)
         {
             TestHelper.WipeStores();

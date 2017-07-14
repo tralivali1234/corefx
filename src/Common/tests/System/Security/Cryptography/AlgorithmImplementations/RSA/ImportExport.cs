@@ -42,6 +42,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(privateParams.Exponent, publicParams.Exponent);
         }
 
+        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void PaddedExport()
         {
@@ -69,6 +70,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             AssertKeyEquals(ref diminishedDPParameters, ref exported);
         }
 
+        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void LargeKeyImportExport()
         {
@@ -98,6 +100,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void UnusualExponentImportExport()
         {
@@ -122,6 +125,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             AssertKeyEquals(ref unusualExponentParameters, ref exported);
         }
 
+        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void ImportExport1032()
         {
@@ -143,6 +147,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Null(exportedPublic.D);
         }
 
+        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void ImportReset()
         {
@@ -191,6 +196,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void MultiExport()
         {
@@ -249,7 +255,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             using (RSA rsa = RSAFactory.Create())
             {
                 if (rsa is RSACng && PlatformDetection.IsFullFramework)
-                    Assert.Throws<ArgumentException>(() => rsa.ImportParameters(imported));
+                    AssertExtensions.Throws<ArgumentException>(null, () => rsa.ImportParameters(imported));
                 else
                     Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
             }
@@ -266,7 +272,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             using (RSA rsa = RSAFactory.Create())
             {
                 if (rsa is RSACng && PlatformDetection.IsFullFramework)
-                    Assert.Throws<ArgumentException>(() => rsa.ImportParameters(imported));
+                    AssertExtensions.Throws<ArgumentException>(null, () => rsa.ImportParameters(imported));
                 else
                     Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
             }
@@ -274,7 +280,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Fact]
 #if TESTING_CNG_IMPLEMENTATION
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/18882")]
+        [ActiveIssue(18882, TargetFrameworkMonikers.NetFramework)]
 #endif
         public static void ImportNoDP()
         {

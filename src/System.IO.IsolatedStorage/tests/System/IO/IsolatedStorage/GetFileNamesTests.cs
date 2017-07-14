@@ -8,11 +8,11 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
+    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class GetFileNamesTests : IsoStorageTest
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18268")]
+        [ActiveIssue("dotnet/corefx #18268", TargetFrameworkMonikers.NetFramework)]
         public void GetFileNames_ThrowsArgumentNull()
         {
             using (var isf = IsolatedStorageFile.GetUserStoreForApplication())
@@ -57,12 +57,12 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>(() => isf.GetFileNames("\0bad"));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.GetFileNames("\0bad"));
             }
         }
 
         [Theory MemberData(nameof(ValidStores))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
+        [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void GetFileNames_GetsFileNames(PresetScopes scope)
         {
             TestHelper.WipeStores();

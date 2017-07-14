@@ -5,6 +5,7 @@
 using SerializationTypes;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -467,6 +468,30 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(y.RO2.Count == 2);
         Assert.True(y.RO2[true] == 'a');
         Assert.True(y.RO2[false] == 'b');
+    }
+
+
+    [Fact]
+    public static void DCJS_Dictionary_UseSimpleDictionaryFormat_VariousKeyTypes()
+    {
+        DCJS_Dictionary_UseSimpleDictionaryFormat((int)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((uint)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((short)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((long)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((byte)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((double)1.0, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((float)1.0, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((char)'a', 1);
+    }
+
+    private static void DCJS_Dictionary_UseSimpleDictionaryFormat<T>(T key, int value)
+    {
+        var settings = new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true };
+        var dict = new Dictionary<T, int>() { { key, 1 } };
+        var actual = SerializeAndDeserialize(dict, string.Empty, settings, skipStringCompare: true);
+        Assert.NotNull(actual);
+        Assert.Equal(dict.Count, actual.Count);
+        Assert.Equal(dict[key], actual[key]);
     }
 
     [Fact]
@@ -1692,14 +1717,13 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18312")]
     public static void DCJS_ReadOnlyDictionary()
     {
         var dict = new Dictionary<string, int>();
         dict["Foo"] = 1;
         dict["Bar"] = 2;
         ReadOnlyDictionary<string, int> value = new ReadOnlyDictionary<string, int>(dict);
-        var deserializedValue = SerializeAndDeserialize(value, @"{""_dictionary"":[{""Key"":""Foo"",""Value"":1},{""Key"":""Bar"",""Value"":2}]}");
+        var deserializedValue = SerializeAndDeserialize(value, @"{""m_dictionary"":[{""Key"":""Foo"",""Value"":1},{""Key"":""Bar"",""Value"":2}]}");
 
         Assert.StrictEqual(value.Count, deserializedValue.Count);
         Assert.StrictEqual(value["Foo"], deserializedValue["Foo"]);
@@ -2438,7 +2462,7 @@ public static partial class DataContractJsonSerializerTests
                 },
             };
             var original = DateTime.Now;
-            Assert.Throws<ArgumentException>(() => SerializeAndDeserialize(original, null, dcjsSettings, null, true));
+            AssertExtensions.Throws<ArgumentException>("style", () => SerializeAndDeserialize(original, null, dcjsSettings, null, true));
         }
     }
 
@@ -2693,9 +2717,6 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(4, actual2["a4"]);
     }
 
-#if ReflectionOnly
-    [ActiveIssue(18373)]
-#endif
     [Fact]
     public static void DCJS_VerifyDictionaryFormat()
     {
@@ -2833,6 +2854,60 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(value.StrBase, actual.StrBase);
         Assert.Equal(value.StrDerived, actual.StrDerived);
     }
+
+    [Fact]
+    public static void DCJS_ConcurrentDictionary()
+    {
+        var value = new ConcurrentDictionary<string, int>();
+        value["one"] = 1;
+        value["two"] = 2;
+        var deserializedValue = SerializeAndDeserialize<ConcurrentDictionary<string, int>>(value, @"[{""Key"":""one"",""Value"":1},{""Key"":""two"",""Value"":2}]",
+            null, null, true);
+
+        Assert.NotNull(deserializedValue);
+        Assert.True(deserializedValue.Count == 2);
+        Assert.True(deserializedValue["one"] == 1);
+        Assert.True(deserializedValue["two"] == 2);
+    }
+
+    [Fact]
+    public static void DCJS_ReadOnlyDictionaryCausingDuplicateInvalidDataContract()
+    {
+        var dict = new Dictionary<string, int>();
+        dict["Foo"] = 1;
+        dict["Bar"] = 2;
+        var value = new ReadOnlyDictionary<string, int>(dict);
+        var deserializedValue = SerializeAndDeserialize(value, "{\"m_dictionary\":[{\"Key\":\"Foo\",\"Value\":1},{\"Key\":\"Bar\",\"Value\":2}]}", null, () => new DataContractJsonSerializer(typeof(ReadOnlyDictionary<string, int>)));
+        Assert.StrictEqual(value.Count, deserializedValue.Count);
+        Assert.StrictEqual(value["Foo"], deserializedValue["Foo"]);
+        Assert.StrictEqual(value["Bar"], deserializedValue["Bar"]);
+    }
+
+    [Fact]
+    public static void DCJS_InvalidDataContract_Write_Invalid_Types_Throws()
+    {
+        foreach (NativeJsonTestData td in NativeJsonTestData.Json_InvalidTypes)
+        {
+            Assert.Throws<InvalidDataContractException>(() =>
+            {
+                object o = td.Instantiate();
+                DataContractJsonSerializer dcs = new DataContractJsonSerializer(o.GetType());
+                MemoryStream ms = new MemoryStream();
+                dcs.WriteObject(ms, o);
+            });
+        }
+    }
+
+    [Fact]
+    public static void DCJS_ValidateExceptionOnUnspecifiedRootSerializationType()
+    {
+        var value = new UnspecifiedRootSerializationType();
+        string baseline = "{\"MyIntProperty\":0,\"MyStringProperty\":null}";
+        var actual = SerializeAndDeserialize(value, baseline);
+        
+        Assert.Equal(value.MyIntProperty, actual.MyIntProperty);
+        Assert.Equal(value.MyStringProperty, actual.MyStringProperty);
+    } 
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {

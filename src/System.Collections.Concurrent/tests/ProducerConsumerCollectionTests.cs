@@ -41,6 +41,8 @@ namespace System.Collections.Concurrent.Tests
             1.0;
 #endif
 
+        protected virtual string CopyToNoLengthParamName => "destinationArray";
+
         [Fact]
         public void Ctor_InvalidArgs_Throws()
         {
@@ -415,7 +417,6 @@ namespace System.Collections.Concurrent.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(100)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multidim rank 1 arrays not supported: https://github.com/dotnet/corert/issues/3331")]
         public void CopyTo_ArrayZeroLowerBound_ZeroIndex_ExpectedElementsCopied(int size)
         {
             IEnumerable<int> initialItems = Enumerable.Range(1, size);
@@ -462,10 +463,10 @@ namespace System.Collections.Concurrent.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("array", () => c.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => c.CopyTo(dest, -1));
-            Assert.Throws<ArgumentException>(() => c.CopyTo(dest, dest.Length));
-            Assert.Throws<ArgumentException>(() => c.CopyTo(dest, dest.Length - 2));
+            AssertExtensions.Throws<ArgumentException>(CopyToNoLengthParamName, "", () => c.CopyTo(dest, dest.Length));
+            AssertExtensions.Throws<ArgumentException>(CopyToNoLengthParamName, "", () => c.CopyTo(dest, dest.Length - 2));
 
-            Assert.Throws<ArgumentException>(() => c.CopyTo(new int[7, 7], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => c.CopyTo(new int[7, 7], 0));
         }
 
         [Fact]
@@ -476,8 +477,8 @@ namespace System.Collections.Concurrent.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("array", () => c.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => c.CopyTo(dest, -1));
-            Assert.Throws<ArgumentException>(() => c.CopyTo(dest, dest.Length));
-            Assert.Throws<ArgumentException>(() => c.CopyTo(dest, dest.Length - 2));
+            AssertExtensions.Throws<ArgumentException>(CopyToNoLengthParamName, "", () => c.CopyTo(dest, dest.Length));
+            AssertExtensions.Throws<ArgumentException>(CopyToNoLengthParamName, "", () => c.CopyTo(dest, dest.Length - 2));
         }
 
         [Theory]

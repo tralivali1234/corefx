@@ -60,22 +60,6 @@ namespace System.Tests
             Assert.Same(foo.structField.o2, returnedStruct.o2);
         }
 
-        [Fact]
-        public static void ClosedStaticDelegateSerialization()
-        {
-            var t = new TestSerializableClass();
-            Assert.Equal(1, t.x);
-            Action d = t.IncrementX;
-            d();
-            Assert.Equal(2, t.x);
-
-            d = BinaryFormatterHelpers.Clone(d);
-            t = (TestSerializableClass)d.Target;
-            Assert.Equal(2, t.x);
-            d();
-            Assert.Equal(3, t.x);
-        }
-
         public class A { }
         public class B : A { }
         public delegate A DynamicInvokeDelegate(A nonRefParam1, B nonRefParam2, ref A refParam, out B outParam);
@@ -409,7 +393,7 @@ namespace System.Tests
         [Fact]
         public static void DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue()
         {
-            Assert.Throws<ArgumentException>(() => (new OptionalStringParameter(StringMethod)).DynamicInvoke(new object[] { Type.Missing }));
+            AssertExtensions.Throws<ArgumentException>(null, () => (new OptionalStringParameter(StringMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
         [Fact]

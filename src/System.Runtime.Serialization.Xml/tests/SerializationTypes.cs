@@ -16,6 +16,8 @@ using System.Xml.Serialization;
 using System.IO;
 using System.Text;
 using System.Reflection;
+using System.Threading.Tasks;
+using System.Runtime.Serialization.Json;
 
 namespace SerializationTypes
 {
@@ -1158,6 +1160,8 @@ namespace SerializationTypes
         public string Name4 { get; set; }
 
         public string @Name5 { get; set; }
+
+        public virtual string Name6 { get; set; }
     }
 
     public class DerivedTypeWithDifferentOverrides : BaseType
@@ -1171,6 +1175,23 @@ namespace SerializationTypes
         new internal string Name4 { get; set; }
 
         new public string Name5 { get; set; }
+
+        public override string Name6 { get; set; }
+    }
+
+    public class DerivedTypeWithDifferentOverrides2 : DerivedTypeWithDifferentOverrides
+    {
+        public override string Name1 { get; set; }
+
+        new public string Name2 { get; set; }
+
+        new public string Name3 { get; set; }
+
+        new internal string Name4 { get; set; }
+
+        new internal string Name5 { get; set; }
+
+        new internal string Name6 { get; set; }
     }
 
     public class __TypeNameWithSpecialCharacters漢ñ
@@ -1903,14 +1924,12 @@ namespace SerializationTypes
         public ICollection<int> Member1;
     }
 
-#if uapaot
     public class TypeWithTypeProperty
     {
         public int Id { get; set; }
         public Type Type { get; set; }
         public string Name { get; set; }
     }
-#endif
 
     [DataContract(Namespace = "SerializationTypes.GenericTypeWithPrivateSetter")]
     public class GenericTypeWithPrivateSetter<T>
@@ -3076,6 +3095,50 @@ public class TestableDerivedException : System.Exception
     public string TestProperty { get; set; }
 }
 
+namespace DirectRef
+{
+    public class TypeWithIndirectRef
+    {
+        public static implicit operator Task<object>(TypeWithIndirectRef v)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string Name { get; set; }
+    }
+}
+
+public class NookAppLocalState
+{
+    public int ArticleViewCount { get; set; }
+    public string CurrentlyReadingProductEAN { get; set; }
+    public PaymentType CurrentPaymentType { get; set; }
+    public bool IsFirstRun { get; set; }
+    public List<LocalReadingPosition> LocalReadingPositionState { get; set; }
+    public List<string> PreviousSearchQueries { get; set; }
+    public System.Drawing.Color TextColor;
+
+    [XmlIgnore]
+    public int IgnoreProperty;
+
+    public bool IsFirstRunDuplicate { get; set; }
+    // Nested Types
+    public enum PaymentType
+    {
+        Unconfigured,
+        Nook,
+        Microsoft
+    }
+}
+
+public class LocalReadingPosition
+{
+    public string Ean { get; set; }
+    public DateTime LastReadTime { get; set; }
+    public int PageCount { get; set; }
+    public string PageNumber { get; set; }
+    public string PlatformOffset { get; set; }
+}
 
 public class TypeWithXmlElementProperty
 {
@@ -5186,4 +5249,231 @@ public class Manager : EmployeeC
 
     [DataMember]
     public EmployeeC[] emps;
+}
+
+public class TypeWithVirtualGenericProperty<T>
+{
+    public virtual T Value { get; set; }
+}
+
+public class TypeWithVirtualGenericPropertyDerived<T> : TypeWithVirtualGenericProperty<T>
+{
+    public override T Value { get; set; }
+}
+
+[Serializable]
+public class MyArgumentException : Exception, ISerializable
+{
+    private string _paramName;
+
+    public MyArgumentException() : base() { }
+
+    public MyArgumentException(string message) : base(message)
+    {
+    }
+
+    public MyArgumentException(string message, string paramName) : base(message)
+    {
+        _paramName = paramName;
+    }
+
+    protected MyArgumentException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        _paramName = info.GetString("ParamName");
+    }
+
+    public string ParamName
+    {
+        get
+        {
+            return _paramName;
+        }
+        internal set
+        {
+            _paramName = value;
+        }
+    }
+
+    public override void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        if (info == null)
+        {
+            throw new ArgumentNullException("info");
+        }
+
+        base.GetObjectData(info, context);
+        info.AddValue("ParamName", _paramName, typeof(string));
+    }
+}
+
+[DataContract(IsReference = true)]
+public class DC
+{
+    [DataMember]
+    public string Data = new DateTime().ToLongDateString();
+
+    [DataMember]
+    public DC Next;
+}
+
+[CollectionDataContract(Name = "SampleICollectionTExplicitWithoutDC")]
+public class SampleICollectionTExplicitWithoutDC : ICollection<DC>
+{
+    private List<DC> _internalList = new List<DC>();
+    public SampleICollectionTExplicitWithoutDC() { }
+    public SampleICollectionTExplicitWithoutDC(bool init)
+    {
+        DC dc1 = new DC();
+        _internalList.Add(dc1);
+        _internalList.Add(new DC());
+        _internalList.Add(dc1);
+    }
+
+    void ICollection<DC>.Add(DC item)
+    {
+        _internalList.Add(item);
+    }
+
+    void ICollection<DC>.Clear()
+    {
+        _internalList.Clear();
+    }
+
+    bool ICollection<DC>.Contains(DC item)
+    {
+        return _internalList.Contains(item);
+    }
+
+    void ICollection<DC>.CopyTo(DC[] array, int arrayIndex)
+    {
+        _internalList.CopyTo(array, arrayIndex);
+    }
+
+    int ICollection<DC>.Count
+    {
+        get { return _internalList.Count; }
+    }
+
+    bool ICollection<DC>.IsReadOnly
+    {
+        get { return false; }
+    }
+
+    bool ICollection<DC>.Remove(DC item)
+    {
+        return _internalList.Remove(item);
+    }
+
+    IEnumerator<DC> IEnumerable<DC>.GetEnumerator()
+    {
+        return _internalList.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _internalList.GetEnumerator();
+    }
+}
+
+public class NetNativeTestData
+{
+    public static NetNativeTestData[] InvalidTypes = new NetNativeTestData[] {
+            new NetNativeTestData(typeof(Invalid_Class_No_Parameterless_Ctor),
+                () => new Invalid_Class_No_Parameterless_Ctor("test"),
+                "Type 'Invalid_Class_No_Parameterless_Ctor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute.  If the type is a collection, consider marking it with the CollectionDataContractAttribute.  See the Microsoft .NET Framework documentation for other supported types."),
+            new NetNativeTestData(typeof(Invalid_Class_Derived_With_DataContract),
+                () => new Invalid_Class_Derived_With_DataContract(),
+                "Type 'Invalid_Class_Derived_With_DataContract' cannot inherit from a type that is not marked with DataContractAttribute or SerializableAttribute.  Consider marking the base type 'Invalid_Class_Base_Without_DataContract' with DataContractAttribute or SerializableAttribute, or removing them from the derived type." ),
+            new NetNativeTestData(typeof(Invalid_Class_KnownType_Invalid_Type),
+                () => new Invalid_Class_KnownType_Invalid_Type(),
+                "Type 'Invalid_Class_No_Parameterless_Ctor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute.  If the type is a collection, consider marking it with the CollectionDataContractAttribute.  See the Microsoft .NET Framework documentation for other supported types." ),
+        };
+
+    // This list exists solely to expose all the root objects being serialized.
+    // Without this ILC removes our test data types
+    // All new test data types *must* be added to one of these lists to appear to the ILC.
+    // Test data now added here will result in "serializer not found" exception at runtime.
+    public static DataContractSerializer[] Serializers = new DataContractSerializer[]
+    {
+            new DataContractSerializer(typeof(Invalid_Class_No_Parameterless_Ctor)),
+            new DataContractSerializer(typeof(List<Invalid_Class_No_Parameterless_Ctor>)),
+            new DataContractSerializer(typeof(Invalid_Class_Derived_With_DataContract)),
+            new DataContractSerializer(typeof(Invalid_Class_KnownType_Invalid_Type))
+    };
+
+    public NetNativeTestData(Type type, Func<object> instantiate, string errorMessage)
+    {
+        Type = type;
+        ErrorMessage = errorMessage;
+        Instantiate = instantiate;
+    }
+
+    public Type Type { get; set; }
+
+    public String ErrorMessage { get; set; }
+
+    public Func<object> Instantiate
+    {
+        get; set;
+    }
+}
+public abstract class Invalid_Class_Base_Without_DataContract
+{
+
+}
+
+// Invalid because it is a derived [DataContract] class whose base class is not 
+[DataContract]
+public class Invalid_Class_Derived_With_DataContract : Invalid_Class_Base_Without_DataContract
+{
+
+}
+
+// Invalid because its [KnownType] is an invalid type
+[KnownType(typeof(Invalid_Class_No_Parameterless_Ctor))]
+public class Invalid_Class_KnownType_Invalid_Type
+{
+    public Invalid_Class_KnownType_Invalid_Type()
+    {
+
+    }
+}
+
+public class Invalid_Class_No_Parameterless_Ctor
+{
+    public Invalid_Class_No_Parameterless_Ctor(string id)
+    {
+        ID = id;
+    }
+
+    public string ID { get; set; }
+}
+
+public class NativeJsonTestData
+{
+    public static NativeJsonTestData[] Json_InvalidTypes = new NativeJsonTestData[] {
+                new NativeJsonTestData(typeof(Invalid_Class_No_Parameterless_Ctor),
+                    () => new Invalid_Class_No_Parameterless_Ctor("test")),
+                new NativeJsonTestData(typeof(Invalid_Class_Derived_With_DataContract),
+                    () => new Invalid_Class_Derived_With_DataContract()),
+            };
+
+    // This list exists solely to expose all the root objects being serialized.
+    // Without this ILC removes our test data types
+    // All new test data types *must* be added to one of these lists to appear to the ILC.
+    // Test data now added here will result in "serializer not found" exception at runtime.
+    public static DataContractJsonSerializer[] JsonSerializers = new DataContractJsonSerializer[]
+    {
+                new DataContractJsonSerializer(typeof(Invalid_Class_No_Parameterless_Ctor)),
+                new DataContractJsonSerializer(typeof(List<Invalid_Class_No_Parameterless_Ctor>)),
+                new DataContractJsonSerializer(typeof(Invalid_Class_Derived_With_DataContract)),
+    };
+
+    public NativeJsonTestData(Type type, Func<object> instantiate)
+    {
+        Type = type;
+        Instantiate = instantiate;
+    }
+
+    public Type Type { get; set; }
+    public Func<object> Instantiate { get; set; }
 }

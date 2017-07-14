@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
+    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class GetLastWriteTimeTests : IsoStorageTest
     {
         [Fact]
@@ -54,12 +54,12 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>(() => isf.GetLastWriteTime("\0bad"));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.GetLastWriteTime("\0bad"));
             }
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
+        [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void GetLastWriteTime_GetsTime()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())

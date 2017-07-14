@@ -21,7 +21,7 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
     }
 
     [Theory]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Issue https://github.com/dotnet/corefx/issues/18220")]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/18220", TargetFrameworkMonikers.UapAot)]
     [MemberData(nameof(InputData))]
     public void TestEncoding(string inputString)
     {
@@ -79,6 +79,7 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/21483")]
     public void TestValidEncodings()
     {
         Action<Encoding> check = encoding =>
@@ -116,7 +117,7 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Issue https://github.com/dotnet/corefx/issues/18220")]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/18220", TargetFrameworkMonikers.UapAot)]
     public void InputEncoding_SetWithInInitialized_ResetsIn()
     {
         RemoteInvoke(() =>
@@ -159,7 +160,7 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Issue https://github.com/dotnet/corefx/issues/18220")]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/18220", TargetFrameworkMonikers.UapAot)]
     public void OutputEncoding_SetWithErrorAndOutputInitialized_ResetsErrorAndOutput()
     {
         RemoteInvoke(() =>
@@ -192,7 +193,7 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Issue https://github.com/dotnet/corefx/issues/18220")]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/18220", TargetFrameworkMonikers.UapAot)]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetEncodingWithInvalidCodePage_ThrowsIOException()
     {

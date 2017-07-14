@@ -18,8 +18,22 @@ namespace System.Net.Test.Common
         {
             private const string CertificatePassword = "testcertificate";
             private const string TestDataFolder = "TestData";
-            private static Mutex m = new Mutex(false, "Global\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
-            private const int MutexTimeout = 30 * 1000;
+
+            private static Mutex m;
+            private const int MutexTimeout = 120 * 1000;
+
+            static Certificates()
+            {
+                if (PlatformDetection.IsUap)
+                {
+                    // UWP doesn't support Global mutexes.
+                    m = new Mutex(false, "Local\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
+                }
+                else
+                {
+                    m = new Mutex(false, "Global\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
+                }
+            }
 
             public static X509Certificate2 GetServerCertificate() => GetCertWithPrivateKey(GetServerCertificateCollection());
 
@@ -45,14 +59,24 @@ namespace System.Net.Test.Common
             {
                 // On Windows, .Net Core applications should not import PFX files in parallel to avoid a known system-level race condition.
                 // This bug results in corrupting the X509Certificate2 certificate state.
-                Assert.True(m.WaitOne(MutexTimeout), "Cannot acquire the global certificate mutex.");
+                try
+                {
+                    Assert.True(m.WaitOne(MutexTimeout), "Cannot acquire the global certificate mutex.");
 
-                var certCollection = new X509Certificate2Collection();
-                certCollection.Import(Path.Combine(TestDataFolder, certificateFileName), CertificatePassword, X509KeyStorageFlags.DefaultKeySet);
+                    var certCollection = new X509Certificate2Collection();
+                    certCollection.Import(Path.Combine(TestDataFolder, certificateFileName), CertificatePassword, X509KeyStorageFlags.DefaultKeySet);
 
-                m.ReleaseMutex();
-
-                return certCollection;
+                    return certCollection;
+                }
+                catch (Exception ex)
+                {
+                    Debug.Fail(nameof(Configuration.Certificates.GetCertificateCollection) + " threw " + ex.ToString());
+                    throw;
+                }
+                finally
+                {
+                    m.ReleaseMutex();
+                }
             }
 
             private static X509Certificate2 GetCertWithPrivateKey(X509Certificate2Collection certCollection)

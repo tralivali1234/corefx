@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
+    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class DirectoryExistsTests : IsoStorageTest
     {
         [Fact]
@@ -54,7 +54,7 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>(() => isf.DirectoryExists("\0bad"));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.DirectoryExists("\0bad"));
             }
         }
 
@@ -71,8 +71,9 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData(nameof(ValidStores))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18268")]
+        [Theory]
+        [MemberData(nameof(ValidStores))]
+        [ActiveIssue("dotnet/corefx #18268", TargetFrameworkMonikers.NetFramework)]
         public void DirectoryExists_Existance(PresetScopes scope)
         {
             using (var isf = GetPresetScope(scope))
