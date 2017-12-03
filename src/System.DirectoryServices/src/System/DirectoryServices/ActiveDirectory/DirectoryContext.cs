@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Net;
+using System.Security.Principal;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.ComponentModel;
+using System.Security.Permissions;
+using System.IO;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Net;
-    using System.Security.Principal;
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-    using System.ComponentModel;
-    using System.Security.Permissions;
-    using System.IO;
-    
     public enum DirectoryContextType
     {
         Domain = 0,
@@ -38,7 +37,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region constructors
 
-        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
         static DirectoryContext()
         {
             // load ntdsapi.dll for AD and ADAM
@@ -173,60 +171,18 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region public properties
 
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name => _name;
 
-        public string UserName
-        {
-            get
-            {
-                if (usernameIsNull)
-                {
-                    return null;
-                }
-                else
-                {
-                    return _credential.UserName;
-                }
-            }
-        }
+        public string UserName => usernameIsNull ? null : _credential.UserName;
 
         internal string Password
         {
-            [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
-            get
-            {
-                if (passwordIsNull)
-                {
-                    return null;
-                }
-                else
-                {
-                    return _credential.Password;
-                }
-            }
+            get => passwordIsNull ? null : _credential.Password;
         }
 
-        public DirectoryContextType ContextType
-        {
-            get
-            {
-                return _contextType;
-            }
-        }
+        public DirectoryContextType ContextType => _contextType;
 
-        internal NetworkCredential Credential
-        {
-            get
-            {
-                return _credential;
-            }
-        }
+        internal NetworkCredential Credential => _credential;
 
         #endregion public properties
 
@@ -726,7 +682,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return domainControllerInfo.DomainName;
         }
 
-        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
         private static void GetLibraryHandle()
         {
             // first get AD handle
@@ -758,4 +713,3 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion private methods
     }
 }
-

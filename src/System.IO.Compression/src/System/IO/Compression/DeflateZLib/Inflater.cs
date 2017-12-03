@@ -64,6 +64,18 @@ namespace System.IO.Compression
             }
         }
 
+        public unsafe int Inflate(Span<byte> destination)
+        {
+            // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
+            if (destination.Length == 0)
+                return 0;
+
+            fixed (byte* bufPtr = &destination.DangerousGetPinnableReference())
+            {
+                return InflateVerified(bufPtr, destination.Length);
+            }
+        }
+
         public unsafe int InflateVerified(byte* bufPtr, int length)
         {
             // State is valid; attempt inflation
@@ -107,7 +119,6 @@ namespace System.IO.Compression
             }
         }
 
-        [SecuritySafeCritical]
         private void Dispose(bool disposing)
         {
             if (!_isDisposed)
@@ -136,7 +147,6 @@ namespace System.IO.Compression
         /// <summary>
         /// Creates the ZStream that will handle inflation.
         /// </summary>
-        [SecuritySafeCritical]
         private void InflateInit(int windowBits)
         {
             ZLibNative.ErrorCode error;
@@ -188,7 +198,6 @@ namespace System.IO.Compression
         /// <summary>
         /// Wrapper around the ZLib inflate function
         /// </summary>
-        [SecuritySafeCritical]
         private ZLibNative.ErrorCode Inflate(ZLibNative.FlushCode flushCode)
         {
             ZLibNative.ErrorCode errC;

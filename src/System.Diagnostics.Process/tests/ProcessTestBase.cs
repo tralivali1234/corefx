@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Threading;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessTestBase : RemoteExecutorTestBase
+    public partial class ProcessTestBase : RemoteExecutorTestBase
     {
         protected const int WaitInMS = 30 * 1000;
         protected Process _process;
@@ -39,42 +41,60 @@ namespace System.Diagnostics.Tests
             base.Dispose(disposing);
         }
 
-        protected Process CreateProcess(Func<int> method = null)
+        protected void AddProcessForDispose(Process p)
         {
-            Process p = RemoteInvoke(method ?? (() => SuccessExitCode), new RemoteInvokeOptions { Start = false }).Process;
             lock (_processes)
             {
                 _processes.Add(p);
             }
+        }
+
+        protected Process CreateProcess(Func<int> method = null)
+        {
+            Process p = RemoteInvoke(method ?? (() => SuccessExitCode), new RemoteInvokeOptions { Start = false }).Process;
+            AddProcessForDispose(p);
             return p;
         }
 
         protected Process CreateProcess(Func<string, int> method, string arg)
         {
             Process p = RemoteInvoke(method, arg, new RemoteInvokeOptions { Start = false }).Process;
-            lock (_processes)
-            {
-                _processes.Add(p);
-            }
+            AddProcessForDispose(p);
             return p;
-        }
-
-        protected Process CreateProcessLong()
-        {
-            return CreateProcess(() =>
-            {
-                Thread.Sleep(WaitInMS);
-                return SuccessExitCode;
-            });
         }
 
         protected void StartSleepKillWait(Process p)
         {
             p.Start();
-            Thread.Sleep(50);
+            Thread.Sleep(200);
             p.Kill();
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
+        /// <summary>
+        /// Checks if the program is installed
+        /// </summary>
+        /// <param name="program"></param>
+        /// <returns></returns>
+        protected static bool IsProgramInstalled(string program)
+        {
+            string path;
+            string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            char separator = PlatformDetection.IsWindows ? ';' : ':';
+            if (pathEnvVar != null)
+            {
+                var pathParser = new StringParser(pathEnvVar, separator, skipEmpty: true);
+                while (pathParser.MoveNext())
+                {
+                    string subPath = pathParser.ExtractCurrent();
+                    path = Path.Combine(subPath, program);
+                    if (File.Exists(path))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 }

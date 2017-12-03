@@ -11,7 +11,7 @@ using System.Security.Permissions;
 namespace System.Drawing
 {
     [Serializable]
-    partial class Image : ISerializable
+    partial class Image
     {
 #pragma warning disable CA2229
         internal Image(SerializationInfo info, StreamingContext context)
@@ -62,7 +62,6 @@ namespace System.Drawing
             }
         }
 
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
         {
             using (MemoryStream stream = new MemoryStream())

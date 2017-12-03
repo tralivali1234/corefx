@@ -10,7 +10,7 @@ using System.Security.Permissions;
 namespace System.Drawing
 {
     [Serializable]
-    partial class Font : ISerializable
+    partial class Font
     {
         private Font(SerializationInfo info, StreamingContext context)
         {
@@ -84,7 +84,6 @@ namespace System.Drawing
             }
         }
 
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
         {
             // Serialize the original Font name rather than the fallback font name if we have one
