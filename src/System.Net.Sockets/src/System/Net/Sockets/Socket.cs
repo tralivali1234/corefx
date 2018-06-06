@@ -72,9 +72,12 @@ namespace System.Net.Sockets
 
         #region Constructors
         public Socket(SocketType socketType, ProtocolType protocolType)
-            : this(AddressFamily.InterNetworkV6, socketType, protocolType)
+            : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
         {
-            DualMode = true;
+            if (OSSupportsIPv6)
+            {
+                DualMode = true;
+            }
         }
 
         // Initializes a new instance of the Sockets.Socket class.
@@ -789,6 +792,11 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
             ValidateBlockingMode();
 
             if (NetEventSource.IsEnabled)
@@ -840,6 +848,11 @@ namespace System.Net.Sockets
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
             }
 
             ValidateForMultiConnect(isMultiEndpoint: false); // needs to come before CanTryAddressFamily call
@@ -915,6 +928,11 @@ namespace System.Net.Sockets
             if (_addressFamily != AddressFamily.InterNetwork && _addressFamily != AddressFamily.InterNetworkV6)
             {
                 throw new NotSupportedException(SR.net_invalidversion);
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
             }
 
             ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
@@ -2074,6 +2092,11 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
 
             DnsEndPoint dnsEP = remoteEP as DnsEndPoint;
             if (dnsEP != null)
@@ -2154,6 +2177,11 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
             IPAddress parsedAddress;
             if (IPAddress.TryParse(host, out parsedAddress))
             {
@@ -2201,6 +2229,11 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
             ValidateForMultiConnect(isMultiEndpoint: false); // needs to be called before CanTryAddressFamily
 
             if (!CanTryAddressFamily(address.AddressFamily))
@@ -2241,6 +2274,11 @@ namespace System.Net.Sockets
             if (_isListening)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
             }
 
             ValidateForMultiConnect(isMultiEndpoint: true);
@@ -3777,7 +3815,10 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public bool ConnectAsync(SocketAsyncEventArgs e)
+        public bool ConnectAsync(SocketAsyncEventArgs e) =>
+            ConnectAsync(e, userSocket: true);
+
+        private bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
             bool pending;
@@ -3804,6 +3845,11 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
             // Prepare SocketAddress.
             EndPoint endPointSnapshot = e.RemoteEndPoint;
             DnsEndPoint dnsEP = endPointSnapshot as DnsEndPoint;
@@ -3819,10 +3865,10 @@ namespace System.Net.Sockets
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
 
-                MultipleConnectAsync multipleConnectAsync = new SingleSocketMultipleConnectAsync(this, true);
+                MultipleConnectAsync multipleConnectAsync = new SingleSocketMultipleConnectAsync(this, userSocket: true);
 
                 e.StartOperationCommon(this, SocketAsyncOperation.Connect);
-                e.StartOperationConnect(multipleConnectAsync);
+                e.StartOperationConnect(multipleConnectAsync, userSocket: true);
 
                 pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
             }
@@ -3860,7 +3906,7 @@ namespace System.Net.Sockets
 
                 // Prepare for the native call.
                 e.StartOperationCommon(this, SocketAsyncOperation.Connect);
-                e.StartOperationConnect();
+                e.StartOperationConnect(multipleConnect: null, userSocket);
 
                 // Make the native call.
                 SocketError socketError = SocketError.Success;
@@ -3919,18 +3965,18 @@ namespace System.Net.Sockets
                 else
                 {
                     attemptSocket = new Socket(dnsEP.AddressFamily, socketType, protocolType);
-                    multipleConnectAsync = new SingleSocketMultipleConnectAsync(attemptSocket, false);
+                    multipleConnectAsync = new SingleSocketMultipleConnectAsync(attemptSocket, userSocket: false);
                 }
 
                 e.StartOperationCommon(attemptSocket, SocketAsyncOperation.Connect);
-                e.StartOperationConnect(multipleConnectAsync);
+                e.StartOperationConnect(multipleConnectAsync, userSocket: false);
 
                 pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
             }
             else
             {
                 Socket attemptSocket = new Socket(endPointSnapshot.AddressFamily, socketType, protocolType);
-                pending = attemptSocket.ConnectAsync(e);
+                pending = attemptSocket.ConnectAsync(e, userSocket: false);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, pending);
@@ -4333,14 +4379,16 @@ namespace System.Net.Sockets
         {
             if (!s_initialized)
             {
+                InitializeSocketsCore();
+            }
+
+            void InitializeSocketsCore()
+            {
                 lock (InternalSyncObject)
                 {
                     if (!s_initialized)
                     {
                         SocketPal.Initialize();
-
-                        // Cache some settings locally.
-                        // s_perfCountersEnabled = SocketPerfCounter.Instance.Enabled; // TODO (#7833): Implement socket perf counters.
                         s_initialized = true;
                     }
                 }
@@ -4407,15 +4455,8 @@ namespace System.Net.Sockets
                 catch (Exception exception) when (!ExceptionCheck.IsFatal(exception)) { }
             }
 
-            // Make sure we're the first call to Dispose and no SetAsyncEventSelect is in progress.
-            int last;
-            SpinWait sw = new SpinWait();
-            while ((last = Interlocked.CompareExchange(ref _intCleanedUp, 1, 0)) == 2)
-            {
-                sw.SpinOnce();
-            }
-
-            if (last == 1)
+            // Make sure we're the first call to Dispose
+            if (Interlocked.CompareExchange(ref _intCleanedUp, 1, 0) == 1)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return;

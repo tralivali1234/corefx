@@ -84,7 +84,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
@@ -92,7 +92,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
         [PlatformSpecific(TestPlatforms.Windows)] // see comment below
         [ActiveIssue(21327, TargetFrameworkMonikers.Uap)] // UWP Apps are forbidden to send network traffic to the local Computer.
         public async Task MulticastInterface_Set_Loopback_Succeeds()
@@ -117,11 +117,7 @@ namespace System.Net.Sockets.Tests
                 receiveSocket.ReceiveTimeout = 1000;
                 receiveSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(multicastAddress, interfaceIndex));
 
-                // https://github.com/Microsoft/BashOnWindows/issues/990
-                if (!PlatformDetection.IsWindowsSubsystemForLinux)
-                {
-                    sendSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex));
-                }
+                sendSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex));
 
                 var receiveBuffer = new byte[1024];
                 var receiveTask = receiveSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
@@ -151,6 +147,109 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.Throws<SocketException>(() =>
                     s.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex)));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
+        public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
+        {
+            if (PlatformDetection.IsFedora || PlatformDetection.IsRedHatFamily7 || PlatformDetection.IsOSX)
+            {
+                return; // [ActiveIssue(24008)]
+            }
+
+            // On all platforms, index 0 means "any interface"
+            await MulticastInterface_Set_IPv6_Helper(0);
+        }
+
+        [Fact]
+        public void MulticastTTL_Set_IPv4_Succeeds()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                // This should not throw. We currently do not have good mechanism how to verify that the TTL/Hops is actually set.
+
+                int ttl = (int)socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive);
+                ttl += 1;
+                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, ttl);
+                Assert.Equal(ttl, (int)socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
+        public void MulticastTTL_Set_IPv6_Succeeds()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
+            {
+                // This should not throw. We currently do not have good mechanism how to verify that the TTL/Hops is actually set.
+
+                int ttl = (int)socket.GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastTimeToLive);
+                ttl += 1;
+                socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastTimeToLive, ttl);
+                Assert.Equal(ttl, (int)socket.GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastTimeToLive));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue(21327, TargetFrameworkMonikers.Uap)] // UWP Apps are forbidden to send network traffic to the local Computer.
+        public async void MulticastInterface_Set_IPv6_Loopback_Succeeds()
+        {
+            // On Windows, we can apparently assume interface 1 is "loopback." On other platforms, this is not a
+            // valid assumption. We could maybe use NetworkInterface.LoopbackInterfaceIndex to get the index, but
+            // this would introduce a dependency on System.Net.NetworkInformation, which depends on System.Net.Sockets,
+            // which is what we're testing here....  So for now, we'll just assume "loopback == 1" and run this on
+            // Windows only.
+            await MulticastInterface_Set_IPv6_Helper(1);
+        }
+
+        private async Task MulticastInterface_Set_IPv6_Helper(int interfaceIndex)
+        {
+            IPAddress multicastAddress = IPAddress.Parse("ff11::1:1");
+            string message = "hello";
+            int port;
+
+            using (Socket receiveSocket = CreateBoundUdpIPv6Socket(out port),
+                          sendSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
+            {
+                receiveSocket.ReceiveTimeout = 1000;
+                receiveSocket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.AddMembership, new IPv6MulticastOption(multicastAddress, interfaceIndex));
+
+                // https://github.com/Microsoft/BashOnWindows/issues/990
+                if (!PlatformDetection.IsWindowsSubsystemForLinux)
+                {
+                    sendSocket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastInterface, interfaceIndex);
+                }
+
+                var receiveBuffer = new byte[1024];
+                var receiveTask = receiveSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
+
+                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
+                {
+                    sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
+                }
+
+                var cts = new CancellationTokenSource();
+                Assert.True(await Task.WhenAny(receiveTask, Task.Delay(20_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
+                cts.Cancel();
+
+                int bytesReceived = await receiveTask;
+                string receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, bytesReceived);
+
+                Assert.Equal(receivedMessage, message);
+            }
+        }
+
+        [Fact]
+        public void MulticastInterface_Set_IPv6_InvalidIndex_Throws()
+        {
+            int interfaceIndex = 31415;
+            using (Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
+            {
+                Assert.Throws<SocketException>(() =>
+                                               s.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastInterface, interfaceIndex));
             }
         }
 
@@ -213,6 +312,21 @@ namespace System.Net.Sockets.Tests
             string sendMessage = "dummy message";
             int port = 54320;
             IPAddress multicastAddress = IPAddress.Parse("239.1.1.1");
+            receiveSocket.SendTo(Encoding.UTF8.GetBytes(sendMessage), new IPEndPoint(multicastAddress, port));
+
+            localPort = (receiveSocket.LocalEndPoint as IPEndPoint).Port;
+            return receiveSocket;
+        }
+
+        // Create an Udp Socket and binds it to an available port
+        private static Socket CreateBoundUdpIPv6Socket(out int localPort)
+        {
+            Socket receiveSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+
+            // sending a message will bind the socket to an available port
+            string sendMessage = "dummy message";
+            int port = 54320;
+            IPAddress multicastAddress = IPAddress.Parse("ff11::1:1");
             receiveSocket.SendTo(Encoding.UTF8.GetBytes(sendMessage), new IPEndPoint(multicastAddress, port));
 
             localPort = (receiveSocket.LocalEndPoint as IPEndPoint).Port;

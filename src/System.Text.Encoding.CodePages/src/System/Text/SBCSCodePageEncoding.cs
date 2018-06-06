@@ -5,11 +5,11 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 using System.Threading;
 using System.Globalization;
 using System.Security;
+using System.Runtime.CompilerServices;
 
 namespace System.Text
 {
@@ -31,28 +31,6 @@ namespace System.Text
 
         public SBCSCodePageEncoding(int codePage, int dataCodePage) : base(codePage, dataCodePage)
         {
-        }
-
-        // Method assumes that memory pointer is aligned
-        private static unsafe void ZeroMemAligned(byte* buffer, int count)
-        {
-            long* pLong = (long*)buffer;
-            long* pLongEnd = (long*)(buffer + count - sizeof(long));
-
-            while (pLong < pLongEnd)
-            {
-                *pLong = 0;
-                pLong++;
-            }
-
-            byte* pByte = (byte*)pLong;
-            byte* pEnd = buffer + count;
-
-            while (pByte < pEnd)
-            {
-                *pByte = 0;
-                pByte++;
-            }
         }
 
         // We have a managed code page entry, so load our tables
@@ -93,7 +71,7 @@ namespace System.Text
                 const int CodePageNumberSize = 4;
                 int bytesToAllocate = UnicodeToBytesMappingSize + BytesToUnicodeMappingSize + CodePageNumberSize + iExtraBytes;
                 byte* pNativeMemory = GetNativeMemory(bytesToAllocate);
-                ZeroMemAligned(pNativeMemory, bytesToAllocate);
+                Unsafe.InitBlockUnaligned(pNativeMemory, 0, (uint)bytesToAllocate);
 
                 char* mapBytesToUnicode = (char*)pNativeMemory;
                 byte* mapUnicodeToBytes = (byte*)(pNativeMemory + 256 * 2);
@@ -131,7 +109,7 @@ namespace System.Text
                         }
                     }
                 }
-                
+
                 _mapBytesToUnicode = mapBytesToUnicode;
                 _mapUnicodeToBytes = mapUnicodeToBytes;
             }
@@ -915,7 +893,6 @@ namespace System.Text
         {
             if (charCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // Characters would be # of characters + 1 in case high surrogate is ? * max fallback
             long byteCount = (long)charCount + 1;
@@ -934,7 +911,6 @@ namespace System.Text
         {
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // Just return length, SBCS stay the same length because they don't map to surrogate
             long charCount = (long)byteCount;

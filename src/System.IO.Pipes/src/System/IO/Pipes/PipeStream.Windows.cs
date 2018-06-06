@@ -5,7 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -343,7 +343,7 @@ namespace System.IO.Pipes
             int r = 0;
             int numBytesRead = 0;
 
-            fixed (byte* p = &buffer.DangerousGetPinnableReference())
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
             {
                 r = _isAsync ?
                     Interop.Kernel32.ReadFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
@@ -381,7 +381,7 @@ namespace System.IO.Pipes
             int r = 0;
             int numBytesWritten = 0;
 
-            fixed (byte* p = &buffer.DangerousGetPinnableReference())
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
             {
                 r = _isAsync ?
                     Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
@@ -411,6 +411,31 @@ namespace System.IO.Pipes
             }
             return secAttrs;
         }
+
+        internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability, PipeSecurity pipeSecurity, ref GCHandle pinningHandle)
+        {
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
+            secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
+
+            if ((inheritability & HandleInheritability.Inheritable) != 0)
+            {
+                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
+            }
+
+            if (pipeSecurity != null)
+            {
+                byte[] securityDescriptor = pipeSecurity.GetSecurityDescriptorBinaryForm();
+                pinningHandle = GCHandle.Alloc(securityDescriptor, GCHandleType.Pinned);
+                fixed (byte* pSecurityDescriptor = securityDescriptor)
+                {
+                    secAttrs.lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+                }
+            }
+
+            return secAttrs;
+        }
+
+
 
         /// <summary>
         /// Determine pipe read mode from Win32 

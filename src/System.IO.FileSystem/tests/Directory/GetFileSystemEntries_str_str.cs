@@ -904,11 +904,11 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-invalid sarch patterns throw ArgumentException
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-invalid search patterns throws no exception 
         public void UnixSearchPatternInvalid()
         {
-            Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
-            Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, string.Format("te{0}st", "\0".ToString())));
+            GetEntries(TestDirectory, "\0");
+            GetEntries(TestDirectory, string.Format("te{0}st", "\0".ToString()));
         }
 
         [Fact]
@@ -985,7 +985,12 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WindowsInvalidUnixValid))]
+            InlineData("         "),
+            InlineData(" "),
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-valid chars in file search patterns
         public void UnixSearchPatternFileValidChar(string valid)
         {
@@ -999,7 +1004,12 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WindowsInvalidUnixValid))]
+            InlineData("         "),
+            InlineData(" "),
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-valid chars in directory search patterns
         public void UnixSearchPatternDirectoryValidChar(string valid)
         {

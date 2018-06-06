@@ -458,8 +458,8 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>
-        /// Compares the existing value for the specified key with a specified value, and if they're equal,
-        /// updates the key with a third value.
+        /// Updates the value associated with <paramref name="key"/> to <paramref name="newValue"/> if the existing value is equal
+        /// to <paramref name="comparisonValue"/>.
         /// </summary>
         /// <param name="key">The key whose value is compared with <paramref name="comparisonValue"/> and
         /// possibly replaced.</param>
@@ -479,8 +479,8 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>
-        /// Compares the existing value for the specified key with a specified value, and if they're equal,
-        /// updates the key with a third value.
+        /// Updates the value associated with <paramref name="key"/> to <paramref name="newValue"/> if the existing value is equal
+        /// to <paramref name="comparisonValue"/>.
         /// </summary>
         /// <param name="key">The key whose value is compared with <paramref name="comparisonValue"/> and
         /// possibly replaced.</param>
@@ -893,13 +893,11 @@ namespace System.Collections.Concurrent
         // as these are uncommonly needed and when inlined are observed to prevent the inlining
         // of important methods like TryGetValue and ContainsKey.
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowKeyNotFoundException(object key)
         {
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowKeyNullException()
         {
             throw new ArgumentNullException("key");
@@ -1209,19 +1207,24 @@ namespace System.Collections.Concurrent
         {
             get
             {
+                // Check if any buckets are non-empty, without acquiring any locks.
+                // This fast path should generally suffice as collections are usually not empty.
+                if (!AreAllBucketsEmpty())
+                {
+                    return false;
+                }
+
+                // We didn't see any buckets containing items, however we can't be sure
+                // the collection was actually empty at any point in time as items may have been
+                // added and removed while iterating over the buckets such that we never saw an
+                // empty bucket, but there was always an item present in at least one bucket.
                 int acquiredLocks = 0;
                 try
                 {
                     // Acquire all locks
                     AcquireAllLocks(ref acquiredLocks);
 
-                    for (int i = 0; i < _tables._countPerLock.Length; i++)
-                    {
-                        if (_tables._countPerLock[i] != 0)
-                        {
-                            return false;
-                        }
-                    }
+                    return AreAllBucketsEmpty();
                 }
                 finally
                 {
@@ -1229,7 +1232,20 @@ namespace System.Collections.Concurrent
                     ReleaseLocks(0, acquiredLocks);
                 }
 
-                return true;
+                bool AreAllBucketsEmpty()
+                {
+                    int[] countPerLock = _tables._countPerLock;
+
+                    for (int i = 0; i < countPerLock.Length; i++)
+                    {
+                        if (countPerLock[i] != 0)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
             }
         }
 

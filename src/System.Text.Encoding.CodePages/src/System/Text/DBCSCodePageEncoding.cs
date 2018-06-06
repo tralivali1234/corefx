@@ -5,10 +5,10 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 using System.Threading;
 using System.Security;
+using System.Runtime.CompilerServices;
 
 namespace System.Text
 {
@@ -106,7 +106,9 @@ namespace System.Text
 
                 // Get our mapped section (bytes to allocate = 2 bytes per 65536 Unicode chars + 2 bytes per 65536 DBCS chars)
                 // Plus 4 byte to remember CP # when done loading it. (Don't want to get IA64 or anything out of alignment)
-                byte* pNativeMemory = GetNativeMemory(65536 * 2 * 2 + 4 + iExtraBytes);
+                int sizeToAllocate = 65536 * 2 * 2 + 4 + iExtraBytes;
+                byte* pNativeMemory = GetNativeMemory(sizeToAllocate);
+                Unsafe.InitBlockUnaligned(pNativeMemory, 0, (uint)sizeToAllocate);
 
                 mapBytesToUnicode = (char*)pNativeMemory;
                 mapUnicodeToBytes = (ushort*)(pNativeMemory + 65536 * 2);
@@ -1107,7 +1109,6 @@ namespace System.Text
         {
             if (charCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // Characters would be # of characters + 1 in case high surrogate is ? * max fallback
             long byteCount = (long)charCount + 1;
@@ -1128,7 +1129,6 @@ namespace System.Text
         {
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // DBCS is pretty much the same, but could have hanging high byte making extra ? and fallback for unknown
             long charCount = ((long)byteCount + 1);

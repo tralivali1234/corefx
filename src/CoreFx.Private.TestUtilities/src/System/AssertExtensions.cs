@@ -50,6 +50,14 @@ namespace System
             return exception;
         }
 
+        public static T Throws<T>(Action action)
+            where T : Exception
+        {
+            T exception = Assert.Throws<T>(action);
+
+            return exception;
+        }
+
         public static T Throws<T>(string paramName, Func<object> testCode)
             where T : ArgumentException
         {
@@ -72,15 +80,34 @@ namespace System
             return exception;
         }
 
-        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, Action action) 
-            where TNetCoreExceptionType : ArgumentException 
+        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, Action action)
+            where TNetCoreExceptionType : ArgumentException
             where TNetFxExceptionType : ArgumentException
         {
             Throws<TNetCoreExceptionType, TNetFxExceptionType>(paramName, paramName, action);
         }
 
+        public static Exception Throws<TNetCoreExceptionType, TNetFxExceptionType>(Action action)
+            where TNetCoreExceptionType : Exception
+            where TNetFxExceptionType : Exception
+        {
+            return Throws(typeof(TNetCoreExceptionType), typeof(TNetFxExceptionType), action);
+        }
+
+        public static Exception Throws(Type netCoreExceptionType, Type netFxExceptionType, Action action)
+        {
+            if (IsFullFramework)
+            {
+                return Assert.Throws(netFxExceptionType, action);
+            }
+            else
+            {
+                return Assert.Throws(netCoreExceptionType, action);
+            }
+        }
+
         public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string netCoreParamName, string netFxParamName, Action action)
-            where TNetCoreExceptionType : ArgumentException 
+            where TNetCoreExceptionType : ArgumentException
             where TNetFxExceptionType : ArgumentException
         {
             if (IsFullFramework)
@@ -150,6 +177,24 @@ namespace System
                 return message;
             else
                 return $"{message} {userMessage}";
+        }
+        
+        /// <summary>
+        /// Tests whether the specified string contains the specified substring
+        /// and throws an exception if the substring does not occur within the
+        /// test string or if either string or substring is null.
+        /// </summary>
+        /// <param name="value">
+        /// The string that is expected to contain <paramref name="substring"/>.
+        /// </param>
+        /// <param name="substring">
+        /// The string expected to occur within <paramref name="value"/>.
+        /// </param>
+        public static void Contains(string value, string substring)
+        {
+            Assert.NotNull(value);
+            Assert.NotNull(substring);
+            Assert.Contains(substring, value, StringComparison.Ordinal);
         }
 
         /// <summary>

@@ -8,6 +8,7 @@ using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Runtime.CompilerServices
@@ -92,26 +93,21 @@ namespace System.Runtime.CompilerServices
                 s_siteCtors = ctors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
             }
 
-            Func<CallSiteBinder, CallSite> ctor;
-            MethodInfo method = null;
-            if (!ctors.TryGetValue(delegateType, out ctor))
+            if (!ctors.TryGetValue(delegateType, out Func<CallSiteBinder, CallSite> ctor))
             {
-                method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create));
+                MethodInfo method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create));
 
-                if (delegateType.CanCache())
+                if (delegateType.IsCollectible)
                 {
-                    ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
-                    ctors.Add(delegateType, ctor);
+                    // slow path
+                    return (CallSite)method.Invoke(null, new object[] { binder });
                 }
+
+                ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
+                ctors.Add(delegateType, ctor);
             }
 
-            if (ctor != null)
-            {
-                return ctor(binder);
-            }
-
-            // slow path
-            return (CallSite)method.Invoke(null, new object[] { binder });
+            return ctor(binder);
         }
     }
 
@@ -154,6 +150,11 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         internal T[] Rules;
 
+        /// <summary>
+        /// an instance of matchmaker site to opportunistically reuse when site is polymorphic
+        /// </summary>
+        internal CallSite _cachedMatchmaker;
+
         // Cached update delegate for all sites with a given T
         private static T s_cachedUpdate;
 
@@ -175,6 +176,30 @@ namespace System.Runtime.CompilerServices
         internal CallSite<T> CreateMatchMaker()
         {
             return new CallSite<T>();
+        }
+
+        internal CallSite GetMatchmaker()
+        {
+            // check if we have a cached matchmaker and attempt to atomically grab it.
+            var matchmaker = _cachedMatchmaker;
+            if (matchmaker != null)
+            {
+                matchmaker = Interlocked.Exchange(ref _cachedMatchmaker, null);
+                Debug.Assert(matchmaker?._match != false, "cached site should be set up for matchmaking");
+            }
+
+            return matchmaker ?? new CallSite<T>() { _match = true };
+        }
+
+        internal void ReleaseMatchmaker(CallSite matchMaker)
+        {
+            // If "Rules" has not been created, this is the first (and likely the only) Update of the site.
+            // 90% sites stay monomorphic and will never need a matchmaker again.
+            // Otherwise store the matchmaker for the future use.
+            if (Rules != null)
+            {
+                _cachedMatchmaker = matchMaker;
+            }
         }
 
         /// <summary>

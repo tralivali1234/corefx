@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Globalization;
 using System.Collections.Generic;
 
 namespace System.Buffers.Text.Tests
@@ -12,7 +13,7 @@ namespace System.Buffers.Text.Tests
     //
     internal static partial class TestData
     {
-        public static readonly IEnumerable<byte> Precisions = new byte[] { StandardFormat.NoPrecision, 0, 1, 3, 10, StandardFormat.MaxPrecision };
+        public static readonly IEnumerable<byte> s_precisions = new byte[] { StandardFormat.NoPrecision, 0, 1, 3, 10, StandardFormat.MaxPrecision };
 
         public static IEnumerable<object[]> IntegerTypesTheoryData => IntegerTypes.Select(t => new object[] { t });
 
@@ -137,6 +138,15 @@ namespace System.Buffers.Text.Tests
                 yield return 12345L;
                 yield return -12345L;
 
+                yield return 4294967294999999999L; // uint.MaxValue * Billion - 1
+                yield return 4294967295000000000L; // uint.MaxValue * Billion
+                yield return 4294967295000000001L; // uint.MaxValue * Billion + 1
+                yield return -4294967294999999999L; // -(uint.MaxValue * Billion - 1)
+                yield return -4294967295000000000L; // -(uint.MaxValue * Billion)
+                yield return -4294967295000000001L; // -(uint.MaxValue * Billion + 1)
+                yield return 4294967296000000000L; // (uint.MaxValue + 1) * Billion
+                yield return -4294967296000000000L; // -(uint.MaxValue + 1) * Billion
+
                 long powerOf10 = 1L;
                 for (int i = 0; i < 21; i++)
                 {
@@ -200,7 +210,7 @@ namespace System.Buffers.Text.Tests
                     }
                 }
 
-                yield return ((ulong)(long.MaxValue)) + 1LU;
+                yield return long.MaxValue + 1LU;
                 yield return ulong.MaxValue - 1LU;
                 yield return ulong.MaxValue;
             }
@@ -212,7 +222,7 @@ namespace System.Buffers.Text.Tests
             {
                 foreach (long l in Int64TestData)
                 {
-                    yield return (decimal)l;
+                    yield return l;
                 }
 
                 yield return decimal.MinValue;
@@ -244,7 +254,7 @@ namespace System.Buffers.Text.Tests
             {
                 foreach (long l in Int64TestData)
                 {
-                    yield return (double)l;
+                    yield return l;
                 }
 
                 yield return 1.23;
@@ -257,7 +267,7 @@ namespace System.Buffers.Text.Tests
             {
                 foreach (long d in DoubleTestData)
                 {
-                    float f = (float)d;
+                    float f = d;
                     if (!float.IsInfinity(f))
                         yield return f;
                 }
@@ -313,6 +323,8 @@ namespace System.Buffers.Text.Tests
             {
                 yield return DateTimeOffset.MinValue;
                 yield return DateTimeOffset.MaxValue;
+                yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 0, minutes: 30, seconds: 0));
+                yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 0, minutes: -30, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 8, minutes: 0, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: -8, minutes: 0, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 12, day: 31, hour: 23, minute: 59, second: 58, new TimeSpan(hours: 14, minutes: 0, seconds: 0));
@@ -386,16 +398,16 @@ namespace System.Buffers.Text.Tests
                 yield return "0.000045";
                 yield return "000000123.000045";
 
-                yield return decimal.MinValue.ToString("G");
-                yield return decimal.MaxValue.ToString("G");
+                yield return decimal.MinValue.ToString("G", CultureInfo.InvariantCulture);
+                yield return decimal.MaxValue.ToString("G", CultureInfo.InvariantCulture);
 
-                yield return float.MinValue.ToString("G9");
-                yield return float.MaxValue.ToString("G9");
-                yield return float.Epsilon.ToString("G9");
+                yield return float.MinValue.ToString("G9", CultureInfo.InvariantCulture);
+                yield return float.MaxValue.ToString("G9", CultureInfo.InvariantCulture);
+                yield return float.Epsilon.ToString("G9", CultureInfo.InvariantCulture);
 
-                yield return double.MinValue.ToString("G17");
-                yield return double.MaxValue.ToString("G17");
-                yield return double.Epsilon.ToString("G9");
+                yield return double.MinValue.ToString("G17", CultureInfo.InvariantCulture);
+                yield return double.MaxValue.ToString("G17", CultureInfo.InvariantCulture);
+                yield return double.Epsilon.ToString("G9", CultureInfo.InvariantCulture);
 
                 yield return "1e";
                 yield return "1e+";
@@ -474,6 +486,9 @@ namespace System.Buffers.Text.Tests
                 yield return "1.79769313486233E+308";   //Just over Double.MaxValue
                 yield return "-1.79769313486232E+308";  //Double.MinValue
                 yield return "-1.79769313486233E+308";  //Just under Double.MinValue
+
+                // Ensures that the NumberBuffer capacity is consistent with Desktop's.
+                yield return ".2222222222222222222222222222500000000000000000001";
             }
         }
 

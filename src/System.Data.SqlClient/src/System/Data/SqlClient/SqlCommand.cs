@@ -889,8 +889,13 @@ namespace System.Data.SqlClient
             }
         }
 
+        public IAsyncResult BeginExecuteNonQuery()
+        {
+            // BeginExecuteNonQuery will track ExecutionTime for us
+            return BeginExecuteNonQuery(null, null);
+        }
 
-        private IAsyncResult BeginExecuteNonQuery(AsyncCallback callback, object stateObject)
+        public IAsyncResult BeginExecuteNonQuery(AsyncCallback callback, object stateObject)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -1027,7 +1032,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private int EndExecuteNonQuery(IAsyncResult asyncResult)
+        public int EndExecuteNonQuery(IAsyncResult asyncResult)
         {
             Exception asyncException = ((Task)asyncResult).Exception;
             if (asyncException != null)
@@ -1140,7 +1145,7 @@ namespace System.Data.SqlClient
             Task task = null;
 
             // only send over SQL Batch command if we are not a stored proc and have no parameters and not in batch RPC mode
-            if ((System.Data.CommandType.Text == this.CommandType) && (0 == GetParameterCount(_parameters)))
+            if (!BatchRPCMode && (System.Data.CommandType.Text == this.CommandType) && (0 == GetParameterCount(_parameters)))
             {
                 Debug.Assert(!sendToPipe, "trying to send non-context command to pipe");
                 if (null != statistics)
@@ -1218,7 +1223,12 @@ namespace System.Data.SqlClient
         }
 
 
-        private IAsyncResult BeginExecuteXmlReader(AsyncCallback callback, object stateObject)
+        public IAsyncResult BeginExecuteXmlReader()
+        {
+            return BeginExecuteXmlReader(null, null);
+        }
+
+        public IAsyncResult BeginExecuteXmlReader(AsyncCallback callback, object stateObject)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -1297,7 +1307,7 @@ namespace System.Data.SqlClient
         }
 
 
-        private XmlReader EndExecuteXmlReader(IAsyncResult asyncResult)
+        public XmlReader EndExecuteXmlReader(IAsyncResult asyncResult)
         {
             Exception asyncException = ((Task)asyncResult).Exception;
             if (asyncException != null)
@@ -2524,7 +2534,15 @@ namespace System.Data.SqlClient
                 GetStateObject();
                 Task writeTask = null;
 
-                if ((System.Data.CommandType.Text == this.CommandType) && (0 == GetParameterCount(_parameters)))
+                if (BatchRPCMode)
+                {
+                    Debug.Assert(inSchema == false, "Batch RPC does not support schema only command beahvior");
+                    Debug.Assert(!IsPrepared, "Batch RPC should not be prepared!");
+                    Debug.Assert(!IsDirty, "Batch RPC should not be marked as dirty!");
+                    Debug.Assert(_SqlRPCBatchArray != null, "RunExecuteReader rpc array not provided");
+                    writeTask = _stateObj.Parser.TdsExecuteRPC( _SqlRPCBatchArray, timeout, inSchema, this.Notification, _stateObj, CommandType.StoredProcedure == CommandType, sync: !asyncWrite);
+                }
+                else if ((System.Data.CommandType.Text == this.CommandType) && (0 == GetParameterCount(_parameters)))
                 {
                     // Send over SQL Batch command if we are not a stored proc and have no parameters
                     Debug.Assert(!IsUserPrepared, "CommandType.Text with no params should not be prepared!");

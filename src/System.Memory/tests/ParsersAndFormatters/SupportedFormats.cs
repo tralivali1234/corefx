@@ -29,13 +29,11 @@ namespace System.Buffers.Text.Tests
         public static bool IsParsingImplemented<T>(this SupportedFormat f) => f.IsParsingImplemented(typeof(T));
 
         //
-        // Used to disable automatic generation of ParserTestData from FormatterTestData
+        // Used to disable automatic generation of ParserTestData from FormatterTestData. Useful for bringing up new
+        // formats as you can use this shutoff valve to bring up formatting without having to bring up parsing at the same time.
         //
         public static bool IsParsingImplemented(this SupportedFormat f, Type t)
         {
-            if (IntegerTypes.Contains(t) && (f.Symbol == 'N' || f.Symbol == 'n'))
-                return false;
-
             return true;
         }
 
@@ -116,7 +114,7 @@ namespace System.Buffers.Text.Tests
             get
             {
                 // The "default" format for DateTimeOffset is weird - it's like "G" but also suffixes an offset so it doesn't exactly match any of the explicit offsets.
-                yield return new SupportedFormat(default(char), supportsPrecision: false) { IsDefault = true, NoRepresentation = true };
+                yield return new SupportedFormat(default, supportsPrecision: false) { IsDefault = true, NoRepresentation = true };
                 yield return new SupportedFormat('G', supportsPrecision: false);
                 yield return new SupportedFormat('R', supportsPrecision: false);
                 yield return new SupportedFormat('l', supportsPrecision: false);

@@ -44,6 +44,28 @@ extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
     return ctx;
 }
 
+/*
+Openssl supports setting ecdh curves by default from version 1.1.0.
+For lower versions, this is the recommended approach.
+Returns 1 on success, 0 on failure.
+*/
+static long TrySetECDHNamedCurve(SSL_CTX* ctx)
+{
+	long result = 0;
+#ifdef SSL_CTX_set_ecdh_auto
+	result = SSL_CTX_set_ecdh_auto(ctx, 1);
+#else
+	EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+	if (ecdh != nullptr)
+	{
+		result = SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+		EC_KEY_free(ecdh);
+	}
+#endif
+
+	return result;
+}
+
 extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     // protocols may be 0, meaning system default, in which case let OpenSSL do what OpenSSL wants.
@@ -58,13 +80,8 @@ extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols proto
     {
         protocolOptions |= SSL_OP_NO_SSLv2;
     }
-#ifndef OPENSSL_NO_SSL3
     if ((protocols & PAL_SSL_SSL3) != PAL_SSL_SSL3)
-#endif
     {
-        // If OPENSSL_NO_SSL3 is defined, then ensure we always include
-        // SSL_OP_NO_SSLv3 in case we end up running against a binary
-        // which had SSLv3 enabled (we don't want to use SSLv3 in that case).
         protocolOptions |= SSL_OP_NO_SSLv3;
     }
     if ((protocols & PAL_SSL_TLS) != PAL_SSL_TLS)
@@ -85,6 +102,10 @@ extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols proto
 #endif
 
     SSL_CTX_set_options(ctx, protocolOptions);
+    if (TrySetECDHNamedCurve(ctx) == 0)
+    {
+        ERR_clear_error();
+    }
 }
 
 extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
@@ -95,15 +116,16 @@ extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 extern "C" int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
 {
     // This pops off "old" errors left by other operations
-    // until the first and last error are the same
+    // until the first error is equal to the last one, 
     // this should be looked at again when OpenSsl 1.1 is migrated to
     while (ERR_peek_error() != ERR_peek_last_error())
     {
         ERR_get_error();
     }
-    int32_t errorCode = SSL_get_error(ssl, ret);
-    ERR_clear_error();
-    return errorCode;
+
+    // The error queue should be cleaned outside, if done here there will be no info
+    // for managed exception.
+    return SSL_get_error(ssl, ret);
 }
 
 extern "C" void CryptoNative_SslDestroy(SSL* ssl)
@@ -488,7 +510,9 @@ CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallba
 // delimiter ":" is used to allow more than one strings
 // below string is corresponding to "AllowNoEncryption"
 #define SSL_TXT_Separator ":"
+#define SSL_TXT_Exclusion "!"
 #define SSL_TXT_AllIncludingNull SSL_TXT_ALL SSL_TXT_Separator SSL_TXT_eNULL
+#define SSL_TXT_NotAnon SSL_TXT_Separator SSL_TXT_Exclusion SSL_TXT_aNULL
 
 extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
@@ -496,7 +520,7 @@ extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPoli
     switch (policy)
     {
         case EncryptionPolicy::RequireEncryption:
-            cipherString = SSL_TXT_ALL;
+            cipherString = SSL_TXT_ALL SSL_TXT_NotAnon;
             break;
 
         case EncryptionPolicy::AllowNoEncryption:
@@ -513,10 +537,6 @@ extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPoli
     return SSL_CTX_set_cipher_list(ctx, cipherString);
 }
 
-extern "C" void CryptoNative_SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list)
-{
-    SSL_CTX_set_client_CA_list(ctx, list);
-}
 
 extern "C" void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
 {
@@ -590,5 +610,6 @@ extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** proto
 
 extern "C" int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, const uint8_t* name)
 {
-    return static_cast<int32_t>(SSL_set_tlsext_host_name(ssl, name));
+    return static_cast<int32_t>(SSL_set_tlsext_host_name(ssl, const_cast<unsigned char*>(name)));
 }
+

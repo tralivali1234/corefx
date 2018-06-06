@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
@@ -11,7 +9,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses a Decimal at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -28,7 +26,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out decimal value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out decimal value, out int bytesConsumed, char standardFormat = default)
         {
             ParseNumberOptions options;
             switch (standardFormat)
@@ -43,7 +41,7 @@ namespace System.Buffers.Text
 
                 case 'F':
                 case 'f':
-                    options = default(ParseNumberOptions);
+                    options = default;
                     break;
 
                 default:
@@ -51,7 +49,7 @@ namespace System.Buffers.Text
             }
 
             NumberBuffer number = default;
-            if (!TryParseNumber(text, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
+            if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
             {
                 value = default;
                 return false;

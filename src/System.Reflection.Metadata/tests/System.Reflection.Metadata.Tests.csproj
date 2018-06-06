@@ -22,8 +22,8 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs">
       <Link>Common\Interop\Windows\Interop.LoadLibraryEx.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\Microsoft\Win32\Handles\SafeLibraryHandle.cs</Link>
+    <Compile Include="..\..\Common\src\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\src\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\tests\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
@@ -60,6 +60,7 @@
     <Compile Include="Metadata\PortablePdb\StandalonePortablePdbStreamTests.cs" />
     <Compile Include="Metadata\TagToTokenTests.cs" />
     <Compile Include="Metadata\PortablePdb\DocumentNameTests.cs" />
+    <Compile Include="Metadata\TypeSystem\TypeDefinitionTests.cs" />
     <Compile Include="PortableExecutable\DebugDirectoryBuilderTests.cs" />
     <Compile Include="PortableExecutable\PEHeaderBuilderTests.cs" />
     <Compile Include="PortableExecutable\PEMemoryBlockTests.cs" />

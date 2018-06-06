@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace System.Numerics
@@ -144,7 +143,6 @@ namespace System.Numerics
                     throw new OverflowException(SR.Overflow_NotANumber);
                 }
             }
-            Contract.EndContractBlock();
 
             _sign = 0;
             _bits = null;
@@ -481,7 +479,6 @@ namespace System.Numerics
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            Contract.EndContractBlock();
 
             int len;
 
@@ -904,7 +901,6 @@ namespace System.Numerics
         {
             if (exponent.Sign < 0)
                 throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
-            Contract.EndContractBlock();
 
             value.AssertValid();
             exponent.AssertValid();
@@ -938,7 +934,6 @@ namespace System.Numerics
         {
             if (exponent < 0)
                 throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
-            Contract.EndContractBlock();
 
             value.AssertValid();
 
@@ -1473,7 +1468,7 @@ namespace System.Numerics
             return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format = default, IFormatProvider provider = null) // TODO: change format to ReadOnlySpan<char>
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null) // TODO: change format to ReadOnlySpan<char>
         {
             return BigNumber.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }

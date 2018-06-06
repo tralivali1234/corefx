@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Linq;
-using System.Numerics;
-using System.Buffers.Text;
 using System.Globalization;
 using System.Collections.Generic;
-
-using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
@@ -51,7 +46,7 @@ namespace System.Buffers.Text.Tests
                         StringBuilder sb = new StringBuilder();
                         for (int i = 0; i < numComponents; i++)
                         {
-                            sb.Append((20 + i).ToString());
+                            sb.Append((20 + i).ToString("D", CultureInfo.InvariantCulture));
                             if (i != numComponents - 1)
                             {
                                 char separator = ((separatorMask & (1 << i)) != 0) ? '.' : ':';
@@ -184,30 +179,30 @@ namespace System.Buffers.Text.Tests
         {
             get
             {
-                yield return "1"; 
-                yield return "1.9999999"; 
-                yield return "4294967295"; 
-                yield return "1:2"; 
-                yield return "1:2.9999999"; 
-                yield return "1:4294967295"; 
+                yield return "1";
+                yield return "1.9999999";
+                yield return "4294967295";
+                yield return "1:2";
+                yield return "1:2.9999999";
+                yield return "1:4294967295";
                 yield return "1:2:3";
                 yield return "1.2:3";
                 yield return "1.2:3:4";
-                yield return "1:2:3.9999999"; 
-                yield return "1:2:3.$$$$$$$"; 
-                yield return "1:2:4294967295"; 
-                yield return "1:2:4294967295.9999999"; 
-                yield return "1:2:3:4"; 
-                yield return "1:2:3:4.9999999"; 
+                yield return "1:2:3.9999999";
+                yield return "1:2:3.$$$$$$$";
+                yield return "1:2:4294967295";
+                yield return "1:2:4294967295.9999999";
+                yield return "1:2:3:4";
+                yield return "1:2:3:4.9999999";
                 yield return "1:2:3:4.$$$$$$$";
-                yield return "1:2:3:4294967295"; 
+                yield return "1:2:3:4294967295";
                 yield return "1:2:3:4294967295.9999999";
                 yield return "1.2:3:4.9999999";
                 yield return "1.2:3:4.$$$$$$$";
                 yield return "1.2:3:4294967295";
                 yield return "1.2:3:4294967295.9999999";
-                yield return "1.2:3:4:5"; 
-                yield return "1.2:3:4:5.9999999"; 
+                yield return "1.2:3:4:5";
+                yield return "1.2:3:4:5.9999999";
                 yield return "1.2:3:4.9999999:";
                 yield return "1.2:3:4.9999999.";
 

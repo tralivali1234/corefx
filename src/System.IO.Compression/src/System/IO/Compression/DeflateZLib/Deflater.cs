@@ -4,7 +4,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security;
 
 using ZErrorCode = System.IO.Compression.ZLibNative.ErrorCode;
@@ -92,8 +91,6 @@ namespace System.IO.Compression
         internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!_inputBufferHandle.HasPointer);
-
             if (0 == inputBuffer.Length)
             {
                 return;
@@ -101,7 +98,7 @@ namespace System.IO.Compression
 
             lock (SyncLock)
             {
-                _inputBufferHandle = inputBuffer.Retain(pin: true);
+                _inputBufferHandle = inputBuffer.Pin();
 
                 _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
                 _zlibStream.AvailIn = (uint)inputBuffer.Length;
@@ -112,7 +109,6 @@ namespace System.IO.Compression
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(inputBufferPtr != null);
-            Debug.Assert(!_inputBufferHandle.HasPointer);
 
             if (count == 0)
             {
@@ -128,8 +124,6 @@ namespace System.IO.Compression
 
         internal int GetDeflateOutput(byte[] outputBuffer)
         {
-            Contract.Ensures(Contract.Result<int>() >= 0 && Contract.Result<int>() <= outputBuffer.Length);
-
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
 
@@ -172,12 +166,6 @@ namespace System.IO.Compression
         {
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
-            Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!_inputBufferHandle.HasPointer);
-
-            // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
-            // If there is still input left we should never be getting here; instead we
-            // should be calling GetDeflateOutput.
 
             ZErrorCode errC = ReadDeflateOutput(outputBuffer, ZFlushCode.Finish, out bytesRead);
             return errC == ZErrorCode.StreamEnd;
@@ -191,7 +179,6 @@ namespace System.IO.Compression
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!_inputBufferHandle.HasPointer);
 
 
             // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.

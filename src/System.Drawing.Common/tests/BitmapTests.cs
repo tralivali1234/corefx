@@ -150,8 +150,7 @@ namespace System.Drawing.Tests
                 }
             }
         }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullStream_ThrowsArgumentNullException()
         {
@@ -323,7 +322,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullGraphics_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("g", "Value of 'null' is not valid for 'g'.", () => new Bitmap(1, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("g", null, () => new Bitmap(1, 1, null));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -956,6 +955,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ActiveIssue(21886, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue(29858, TestPlatforms.Windows)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MakeTransparent_GrayscalePixelFormat_ThrowsArgumentException()
         {
